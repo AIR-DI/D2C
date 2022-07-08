@@ -1,0 +1,9 @@
+/example/application*/data/*
+/example/application*/models/*
+/example/benchmark/data/*/*/*
+/example/benchmark/data/neorl/*
+example/benchmark/data/d4rl/datasets/
+!/example/benchmark/data/*/*/*.py
+/example/benchmark/models/*
+__pycache__
+.idea
