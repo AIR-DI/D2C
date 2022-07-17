@@ -10,6 +10,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 from collections import OrderedDict
+from absl import logging
 
 
 class BaseDataLoader(ABC):
@@ -37,6 +38,11 @@ class BaseDataLoader(ABC):
         pass
 
 
+class AppDataLoader(BaseDataLoader):
+    """The data loader for the real-world applications dataset."""
+    raise NotImplementedError
+
+
 class BaseBMLoader(BaseDataLoader):
     """The basic class of the benchmark dataset loader.
     Please inherit this class to build data loaders for different benchmarks.
@@ -62,6 +68,9 @@ class BaseBMLoader(BaseDataLoader):
         self._file_path = file_path
         self._normalize_states = normalize_states
         self._scale_rewards = scale_rewards
+
+    def _load_data(self):
+        raise NotImplementedError
 
     def get_transitions(self) -> Tuple[OrderedDict, np.ndarray, np.ndarray]:
         """Get the transitions from the dataset.
@@ -114,7 +123,7 @@ class BaseBMLoader(BaseDataLoader):
         return r
 
     @staticmethod
-    def get_keys(h5file):
+    def get_keys(h5file: h5py.File) -> List[str]:
         keys = []
 
         def visitor(name, item):
@@ -123,3 +132,48 @@ class BaseBMLoader(BaseDataLoader):
 
         h5file.visititems(visitor)
         return keys
+
+
+class D4rlDataLoader(BaseBMLoader):
+    """Get transitions from the D4RL dataset.
+    """
+
+    def __init__(
+            self,
+            file_path: str,
+            normalize_states: bool = False,
+            scale_rewards: bool = False) -> None:
+        super(D4rlDataLoader, self).__init__(
+            file_path,
+            normalize_states,
+            scale_rewards)
+
+    def _load_data(self):
+        dataset_file = h5py.File(self._file_path + '.hdf5', 'r')
+        offline_dataset = {}
+        for k in self.get_keys(dataset_file):
+            try:
+                # first try loading as an array
+                offline_dataset[k] = dataset_file[k][:]
+            except ValueError as e:  # try loading as a scalar
+                offline_dataset[k] = dataset_file[k][()]
+        dataset_file.close()
+        dataset_size = len(offline_dataset['observations'])
+        offline_dataset['terminals'] = np.squeeze(offline_dataset['terminals'])
+        offline_dataset['rewards'] = np.squeeze(offline_dataset['rewards'])
+        nonterminal_steps, = np.where(
+            np.logical_and(
+                np.logical_not(offline_dataset['terminals']),
+                np.arange(dataset_size) < dataset_size - 1))
+        logging.info('Found %d non-terminal steps out of a total of %d steps.' % (
+            len(nonterminal_steps), dataset_size))
+        demo_s1 = offline_dataset['observations'][nonterminal_steps]
+        demo_s2 = offline_dataset['observations'][nonterminal_steps + 1]
+        demo_a1 = offline_dataset['actions'][nonterminal_steps]
+        demo_a2 = offline_dataset['actions'][nonterminal_steps + 1]
+        demo_r = offline_dataset['rewards'][nonterminal_steps]
+        demo_d = offline_dataset['terminals'][nonterminal_steps + 1]
+        # set the 'demo_c' to 0.
+        demo_c = np.zeros(shape=demo_r.shape)
+
+        return demo_s1, demo_a1, demo_s2, demo_a2, demo_r, demo_c, demo_d
