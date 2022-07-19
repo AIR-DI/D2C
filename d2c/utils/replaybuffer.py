@@ -6,7 +6,7 @@ from typing import Union
 
 
 class ReplayBuffer:
-    """The basic replay buffer.
+    """The base replay buffer.
 
     The main methods:
 

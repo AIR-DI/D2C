@@ -14,7 +14,7 @@ from absl import logging
 
 
 class BaseDataLoader(ABC):
-    """The basic class of the dataset loader.
+    """The base class of the dataset loader.
 
     Inherit this class to build data loaders for benchmarks and real-world applications.
 

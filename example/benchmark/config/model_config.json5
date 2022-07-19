@@ -1,0 +1,195 @@
+{
+  model: {
+    // model types: 'mopp', 'more', 'saber'
+    model_name: 'mopo',
+    // Parameters for each model
+    // Imitation algorithms
+    bc: {
+      // set the model training schedule ('b': behavior, 'd': dynamics, 'q': Q-value function, 'vae_s': vae_s, 'agent': agent)
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {p: [[300, 300],]},
+        // p, entropy
+        optimizers: {p: ['adam', 1e-5], entropy: ['adam', 1e-3]}
+      },
+    },
+    oril: {
+      // set the model training schedule ('b': behavior, 'd': dynamics, 'q': Q-value function, 'vae_s': vae_s, 'agent': agent)
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[300, 300],], p: [[300, 300],]},
+        // q, p
+        optimizers: [['adam', 1e-4], ['adam', 1e-4], ['adam', 1e-4]]
+      },
+    },
+    valuedice: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[400, 400],], p: [[300, 300],], b: [[300, 300],]},
+        // q, p, b, entropy
+        optimizers: [['adam', 1e-3], ['adam', 1e-5], ['adam', 1e-3], ['adam', 1e-3]]
+      }
+    },
+    // Planning algorithms
+    pddm: {
+      train_schedule: ['d', 'b'],
+      hyper_params: {
+        model_params: {b: [[500,200,100], null]},
+        optimizers: [['adam', 1e-3], ['adam', 1e-3]],
+      },
+    },
+    mbop: {
+      train_schedule: ['d', 'b'],
+      hyper_params: {
+        model_params: {b: [[500,500], 3], q:  [[500,500], 3]},
+        optimizers: [['adam', 1e-3], ['adam', 1e-3]],
+      },
+    },
+    mopp: {
+      // set the model training schedule ('b': behavior, 'd': dynamics, 'q': Q-value function, 'vae_s': vae_s, 'agent': agent)
+      train_schedule: ['d', 'b', 'q'],
+      hyper_params: {
+        model_params: {
+          b: [[500,200,100], null],
+          q: [[500,500], 2]
+        },
+        optimizers: [['adam', 1e-3], ['adam', 1e-3], ['adam', 1e-3]],
+        // It should be setted a value when using MOPP in interface
+        d_uncertainty_threshold: null,
+      },
+    },
+    // Model-based RL
+    mopo: {
+      train_schedule: ['d', 'agent'],
+      hyper_params: {
+        model_params: {q: [[256, 256], 2], p: [[256, 256],]},
+        optimizers: [['adam',3e-4], ['adam', 3e-4], ['adam', 3e-4]],
+        uncertainty_mode: 'disagreement',
+      }
+    },
+    more: {
+      train_schedule: ['d', 'vae_s', 'agent'],
+      hyper_params: {
+        model_params: {
+          q: [[400, 400], 2],
+          p: [[300, 300],],
+          vae_s: [[750, 750],],
+        },
+        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-4], ['adam', 1e-3]],
+      }
+    },
+    // Model-free RL
+    bcq: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[750, 750],]},
+        // q, p, b
+        optimizers: [['adam', 1e-3], ['adam', 1e-5], ['adam', 1e-3],],
+      }
+    },
+    bear: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[750, 750],],},
+        // q, p, b, alpha, entropy
+        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-3], ['adam', 1e-3]],
+      }
+    },
+    brac: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[300, 300],],},
+        // q, p, b, alpha, entropy
+        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-3], ['adam', 1e-3]],
+      }
+    },
+    cql: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[400, 400], 2], p: [[300, 300],]},
+        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-3]],
+      }
+    },
+    sbq: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[300, 300],],},
+        // q, p, b, alpha, entropy
+        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-3], ['adam', 1e-3]],
+      }
+    },
+    saber: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[750, 750],],},
+        // q, p, b, alpha, entropy, q_cost
+        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-4], ['adam', 1e-3], ['adam', 1e-3], ['adam', 1e-3]],
+      }
+    },
+  },
+  env: {
+    // Parameters for Env which is provided externally
+    env_external: {benchmark_name: 'd4rl', data_source: 'mujoco', env_name: 'Hopper-v2', data_name: 'hopper_random-v1',
+    data_file_path: null, state_normalize: false, reward_normalize: true, num_transitions: -1,
+    score_normalize: false, score_norm_min: null, score_norm_max: null},
+    // 'dnn', 'prob', 'rnn', 'adm'
+    dynamic_module_type: 'prob',
+    // If the dynamics predict the reward or not.
+    with_reward: true,
+    // parameters for each type of dynmamics models
+    dnn: {
+      model_params: [[200, 200], 3],
+      optimizers: [['adam', 1e-3],],
+    },
+    prob: {
+      model_params: [[200, 200, 200], 3],
+      optimizers: [['adam', 1e-3],],
+      mode: 'local',
+    },
+    rnn: {
+      model_params: [[200, 200], 3],
+      optimizers: [['adam', 1e-3],],
+      warm_steps: 5,
+      out_steps: 10,
+      mode: 'local',
+    },
+    adm: {
+      model_params: null,
+      optimizers: null,
+    },
+  },
+  train: {
+    device: 'cuda',
+    train_test_ratio: 0.99,
+    batch_size: 64,
+    model_buffer_size: 1000000,
+    weight_decays: 1e-5,
+    update_freq: 1,
+    update_rate: 0.005,
+    discount: 0.99,
+    total_train_steps: 10000,
+    summary_freq: 100,
+    print_freq: 1000,
+    save_freq: 10000,
+    eval_freq: 5000,
+    // parameters for model files
+    model_dir: 'models',
+    behavior_ckpt_name: 'b',
+    dynamics_ckpt_name: 'd',
+    q_ckpt_name: 'q',
+    vae_s_ckpt_name: 'vae_s',
+    agent_ckpt_name: 'agent',
+    seed: 1,
+  },
+  eval: {
+    n_eval_episodes: 20,
+    episode_step: 10,
+    log_dir: 'eval',
+    start: 0.,
+    steps: 100,
+  },
+  interface: {
+    policy_file: null,
+    log_path: null,
+  }
+}
