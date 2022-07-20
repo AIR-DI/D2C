@@ -7,8 +7,7 @@ from AIControlOpt_lib.models import make_model
 from AIControlOpt_lib.envs import benchmark_env, Env
 from AIControlOpt_lib.data_loader import BenchmarkData
 from AIControlOpt_lib.evaluators import EvalBM
-from AIControlOpt_lib.utils.utils import gpu_limit
-from example.benchmark.config.general_config import build_config
+from d2c.utils.general_config import build_config
 from absl import logging
 
 logging.set_verbosity(logging.INFO)

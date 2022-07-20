@@ -64,7 +64,7 @@ class ConfigBuilder:
     def _get_env_info(self):
         try:
             self._env_ext = self._model_conf.env.env_external
-            sys.path.append('../')
+            sys.path.append('../../example/benchmark/')
             import_path = '.'.join(('example.benchmark.data', self._env_ext.benchmark_name, self._env_ext.data_source))
             module = importlib.import_module(import_path)
             domain = self._env_ext.env_name.split('-')[0]
