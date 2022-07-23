@@ -1,7 +1,7 @@
 {
   model: {
     // model types: 'mopp', 'more', 'saber'
-    model_name: 'mopo',
+    model_name: 'td3_bc',
     // Parameters for each model
     // Imitation algorithms
     bc: {
@@ -13,119 +13,13 @@
         optimizers: {p: ['adam', 1e-5], entropy: ['adam', 1e-3]}
       },
     },
-    oril: {
-      // set the model training schedule ('b': behavior, 'd': dynamics, 'q': Q-value function, 'vae_s': vae_s, 'agent': agent)
-      train_schedule: ['agent'],
-      hyper_params: {
-        model_params: {q: [[300, 300],], p: [[300, 300],]},
-        // q, p
-        optimizers: [['adam', 1e-4], ['adam', 1e-4], ['adam', 1e-4]]
-      },
-    },
-    valuedice: {
-      train_schedule: ['agent'],
-      hyper_params: {
-        model_params: {q: [[400, 400],], p: [[300, 300],], b: [[300, 300],]},
-        // q, p, b, entropy
-        optimizers: [['adam', 1e-3], ['adam', 1e-5], ['adam', 1e-3], ['adam', 1e-3]]
-      }
-    },
-    // Planning algorithms
-    pddm: {
-      train_schedule: ['d', 'b'],
-      hyper_params: {
-        model_params: {b: [[500,200,100], null]},
-        optimizers: [['adam', 1e-3], ['adam', 1e-3]],
-      },
-    },
-    mbop: {
-      train_schedule: ['d', 'b'],
-      hyper_params: {
-        model_params: {b: [[500,500], 3], q:  [[500,500], 3]},
-        optimizers: [['adam', 1e-3], ['adam', 1e-3]],
-      },
-    },
-    mopp: {
-      // set the model training schedule ('b': behavior, 'd': dynamics, 'q': Q-value function, 'vae_s': vae_s, 'agent': agent)
-      train_schedule: ['d', 'b', 'q'],
-      hyper_params: {
-        model_params: {
-          b: [[500,200,100], null],
-          q: [[500,500], 2]
-        },
-        optimizers: [['adam', 1e-3], ['adam', 1e-3], ['adam', 1e-3]],
-        // It should be setted a value when using MOPP in interface
-        d_uncertainty_threshold: null,
-      },
-    },
-    // Model-based RL
-    mopo: {
-      train_schedule: ['d', 'agent'],
-      hyper_params: {
-        model_params: {q: [[256, 256], 2], p: [[256, 256],]},
-        optimizers: [['adam',3e-4], ['adam', 3e-4], ['adam', 3e-4]],
-        uncertainty_mode: 'disagreement',
-      }
-    },
-    more: {
-      train_schedule: ['d', 'vae_s', 'agent'],
-      hyper_params: {
-        model_params: {
-          q: [[400, 400], 2],
-          p: [[300, 300],],
-          vae_s: [[750, 750],],
-        },
-        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-4], ['adam', 1e-3]],
-      }
-    },
-    // Model-free RL
-    bcq: {
-      train_schedule: ['agent'],
-      hyper_params: {
-        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[750, 750],]},
-        // q, p, b
-        optimizers: [['adam', 1e-3], ['adam', 1e-5], ['adam', 1e-3],],
-      }
-    },
-    bear: {
-      train_schedule: ['agent'],
-      hyper_params: {
-        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[750, 750],],},
-        // q, p, b, alpha, entropy
-        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-3], ['adam', 1e-3]],
-      }
-    },
-    brac: {
-      train_schedule: ['agent'],
-      hyper_params: {
-        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[300, 300],],},
-        // q, p, b, alpha, entropy
-        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-3], ['adam', 1e-3]],
-      }
-    },
-    cql: {
+    td3_bc: {
       train_schedule: ['agent'],
       hyper_params: {
         model_params: {q: [[400, 400], 2], p: [[300, 300],]},
-        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-3]],
+        optimizers: {q: ['adam', 1e-3], p: ['adam', 1e-5]}
       }
-    },
-    sbq: {
-      train_schedule: ['agent'],
-      hyper_params: {
-        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[300, 300],],},
-        // q, p, b, alpha, entropy
-        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-3], ['adam', 1e-3]],
-      }
-    },
-    saber: {
-      train_schedule: ['agent'],
-      hyper_params: {
-        model_params: {q: [[400, 400], 2], p: [[300, 300],], b: [[750, 750],],},
-        // q, p, b, alpha, entropy, q_cost
-        optimizers: [['adam',1e-3], ['adam', 1e-5], ['adam', 1e-4], ['adam', 1e-3], ['adam', 1e-3], ['adam', 1e-3]],
-      }
-    },
+    }
   },
   env: {
     // Parameters for Env which is provided externally

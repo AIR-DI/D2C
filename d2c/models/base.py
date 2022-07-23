@@ -6,7 +6,8 @@ import numpy as np
 from torch import nn, Tensor
 from absl import logging
 from abc import ABC, abstractmethod
-from typing import Union, Optional, List, Tuple, Dict, Sequence
+from easydict import EasyDict
+from typing import Union, Optional, List, Tuple, Dict, Sequence, Any
 from d2c.envs.base import BaseEnv
 from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.utils import utils
@@ -46,8 +47,8 @@ class BaseAgent(ABC):
     def __init__(
             self,
             env: BaseEnv,
-            model_params: Dict,
-            optimizers: Dict,
+            model_params: Union[Dict, EasyDict, Any],
+            optimizers: Union[Dict, EasyDict, Any],
             train_data: ReplayBuffer,
             batch_size: int = 64,
             weight_decays: float = 0.0,
@@ -76,37 +77,38 @@ class BaseAgent(ABC):
         self._modules = self._get_modules()
         self._build_agent()
 
-    def _build_agent(self):
+    def _build_agent(self) -> None:
         """Builds agent components."""
         self._build_fns()
+        self._init_vars()
         self._build_optimizers()
         self._global_step = 0
         self._train_info = collections.OrderedDict()
         self._test_policies = collections.OrderedDict()
         self._build_test_policies()
-        self._init_vars()
-
-    def _build_fns(self):
-        """Build all the models of this RL algorithm."""
-        self._agent_module = AgentModule(modules=self._modules)
 
     @abstractmethod
-    def _build_optimizers(self):
+    def _build_fns(self) -> None:
+        """Build all the models of this RL algorithm."""
+        pass
+
+    @abstractmethod
+    def _init_vars(self):
+        """Initialize the variables of all models."""
+        pass
+
+    @abstractmethod
+    def _get_source_target_vars(self) -> Tuple[Sequence[Tensor], Sequence[Tensor]]:
+        """Get the variables of the source nets and target nets."""
+        return [], []
+
+    @abstractmethod
+    def _build_optimizers(self) -> None:
         """Build optimizers for all the models."""
         pass
 
-    def _build_loss(self, batch):
+    def _build_loss(self, batch: Dict):
         raise NotImplementedError
-
-    @abstractmethod
-    def _build_test_policies(self):
-        """Build the policies for testing."""
-        pass
-
-    @property
-    def test_policies(self):
-        """The trained policy."""
-        return self._test_policies
 
     def _get_train_batch(self) -> Dict:
         """Samples and constructs batch of transitions from the training data set."""
@@ -120,7 +122,7 @@ class BaseAgent(ABC):
         """Build the optimizing schedule for all models."""
         pass
 
-    def train_step(self):
+    def train_step(self) -> None:
         """Train the agent for one step."""
         train_batch = self._get_train_batch()
         info = self._optimize_step(train_batch)
@@ -128,18 +130,10 @@ class BaseAgent(ABC):
             self._train_info[key] = val.item()
         self._global_step += 1
 
-    @abstractmethod
-    def _init_vars(self):
-        """Initialize the variables of all models."""
-        pass
-
-    def _get_source_target_vars(self):
-        return [], []
-
     def _update_target_fns(
             self,
+            source_vars: Sequence[Tensor],
             target_vars: Sequence[Tensor],
-            source_vars: Sequence[Tensor]
     ) -> None:
         tau = self._update_rate
         for tar, sou in zip(target_vars, source_vars):
@@ -160,6 +154,16 @@ class BaseAgent(ABC):
         info = self._train_info
         step = self._global_step
         utils.write_summary(summary_writer, step, info)
+
+    @abstractmethod
+    def _build_test_policies(self):
+        """Build the policies for testing."""
+        pass
+
+    @property
+    def test_policies(self) -> Dict:
+        """The trained policy."""
+        return self._test_policies
 
     @abstractmethod
     def save(self, ckpt_name: str) -> None:
@@ -197,7 +201,7 @@ class BaseAgent(ABC):
         raise NotImplementedError
 
 
-class AgentModule(nn.Module):
+class BaseAgentModule(ABC, nn.Module):
     """The base class for AgentModule of any agent.
 
     Build the models for the Agent according to the input network factories.
@@ -213,11 +217,12 @@ class AgentModule(nn.Module):
     def __init__(
             self,
             modules=None,
-    ):
-        super(AgentModule, self).__init__()
+    ) -> None:
+        super(BaseAgentModule, self).__init__()
         self._modules = modules
         self._build_modules()
 
+    @abstractmethod
     def _build_modules(self):
         pass
 

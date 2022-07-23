@@ -51,6 +51,7 @@ class ActorNetwork(nn.Module):
         of class: ``gym.spaces.Box``.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
+    :param device: which device to create this model on. Default to None.
     """
 
     def __init__(
@@ -121,7 +122,51 @@ class ActorNetwork(nn.Module):
         return self.sample_n(state, n=1)[1][0]
 
     @property
-    def action_space(self):
+    def action_space(self) -> Box:
+        return self._action_space
+
+
+class ActorNetworkDet(nn.Module):
+    """Deterministic Actor network.
+
+    :param Box observation_space: the observation space information. It is an instance
+        of class: ``gym.spaces.Box``.
+    :param Box action_space: the action space information. It is an instance
+        of class: ``gym.spaces.Box``.
+    :param tuple fc_layer_params: the network parameter. For example:
+        ``(300, 300)`` means a 2-layer network with 300 units in each layer.
+    :param device: which device to create this model on. Default to None.
+    """
+
+    def __init__(
+            self,
+            observation_space: Box,
+            action_space: Box,
+            fc_layer_params: Sequence[int] = (),
+            device: Optional[Union[str, int, torch.device]] = None,
+    ) -> None:
+        super(ActorNetworkDet, self).__init__()
+        self._device = device
+        state_dim = observation_space.shape[0]
+        self._action_space = action_space
+        self._action_dim = action_space.shape[0]
+        self._layers = []
+        hidden_sizes = [state_dim] + list(fc_layer_params)
+        for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):
+            self._layers += miniblock(in_dim, out_dim, None, nn.ReLU)
+        self._layers += [nn.Linear(hidden_sizes[-1], self._action_dim)]
+        self._model = nn.Sequential(*self._layers)
+        self._action_means, self._action_mags = get_spec_means_mags(
+            self._action_space, self._device)
+
+    def forward(self, state: Union[np.ndarray, Tensor]) -> Tensor:
+        if self._device is not None:
+            state = torch.as_tensor(state, device=self._device, dtype=torch.float32)
+        a = self._model(state)
+        return torch.tanh(a) * self._action_mags + self._action_means
+
+    @property
+    def action_space(self) -> Box:
         return self._action_space
 
 
@@ -134,6 +179,7 @@ class CriticNetwork(nn.Module):
         of class: ``gym.spaces.Box``.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
+    :param device: which device to create this model on. Default to None.
     """
 
     def __init__(
@@ -174,6 +220,7 @@ class MLP(nn.Module):
     :param int output_dim: the dimension of the output.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
+    :param device: which device to create this model on. Default to None.
     """
     def __init__(
             self,
