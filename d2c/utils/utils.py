@@ -17,10 +17,6 @@ def get_summary_str(step: int = None, info: Dict = None, prefix: str = '') -> st
     return summary_str
 
 
-def write_summary(*args, **kwargs):
-    raise NotImplementedError
-
-
 def get_optimizer(name):
     """Get an optimizer generator that returns an optimizer according to lr."""
     if name == 'adam':

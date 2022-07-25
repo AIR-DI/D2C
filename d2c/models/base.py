@@ -7,10 +7,10 @@ from torch import nn, Tensor
 from absl import logging
 from abc import ABC, abstractmethod
 from easydict import EasyDict
-from typing import Union, Optional, List, Tuple, Dict, Sequence, Any
+from typing import Union, Optional, List, Tuple, Dict, Sequence, Any, Iterator
 from d2c.envs.base import BaseEnv
 from d2c.utils.replaybuffer import ReplayBuffer
-from d2c.utils import utils
+from d2c.utils import utils, logger
 
 
 class BaseAgent(ABC):
@@ -62,7 +62,8 @@ class BaseAgent(ABC):
         self._env = env
         self._observation_space = env.observation_space()
         self._action_space = env.action_space()
-        self._a_max = self._action_space.high
+        self._a_max = torch.tensor(self._action_space.high, device=device, dtype=torch.float32)
+        self._a_min = torch.tensor(self._action_space.low, device=device, dtype=torch.float32)
         self._a_dim = self._action_space.shape[0]
         self._model_params = model_params
         self._optimizers = optimizers
@@ -98,17 +99,12 @@ class BaseAgent(ABC):
         pass
 
     @abstractmethod
-    def _get_source_target_vars(self) -> Tuple[Sequence[Tensor], Sequence[Tensor]]:
-        """Get the variables of the source nets and target nets."""
-        return [], []
-
-    @abstractmethod
     def _build_optimizers(self) -> None:
         """Build optimizers for all the models."""
         pass
 
     def _build_loss(self, batch: Dict):
-        raise NotImplementedError
+        pass
 
     def _get_train_batch(self) -> Dict:
         """Samples and constructs batch of transitions from the training data set."""
@@ -132,8 +128,8 @@ class BaseAgent(ABC):
 
     def _update_target_fns(
             self,
-            source_vars: Sequence[Tensor],
-            target_vars: Sequence[Tensor],
+            source_vars: Union[Sequence[Tensor], Iterator],
+            target_vars: Union[Sequence[Tensor], Iterator]
     ) -> None:
         tau = self._update_rate
         for tar, sou in zip(target_vars, source_vars):
@@ -153,7 +149,8 @@ class BaseAgent(ABC):
         """
         info = self._train_info
         step = self._global_step
-        utils.write_summary(summary_writer, step, info)
+        logger.write_summary_tensorboard(summary_writer, step, info)
+        logger.write_summary_wandb(info)
 
     @abstractmethod
     def _build_test_policies(self):
@@ -198,7 +195,7 @@ class BaseAgent(ABC):
         :param p_fn: policy to be evaluated
         :return: The loss for Fitted-Q evaluation
         """
-        raise NotImplementedError
+        pass
 
 
 class BaseAgentModule(ABC, nn.Module):
