@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from absl import logging
-from typing import Dict
+from typing import Dict, Callable
 from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.utils.dataloader import AppDataLoader, D4rlDataLoader, BaseDataLoader
 
@@ -57,7 +57,13 @@ class Data(BaseData):
     * :meth:`_build_data_loader`: Read the batch data and create a data loader. \
         It builds different data loader according to the corresponding parameters \
         in the configuration.
-    * :meth:`_build_data`: Create a replay buffer and add the data into it. 
+    * :meth:`_build_data`: Create a replay buffer and add the data into it.
+
+    .. note::
+
+        To add a data loader for a new benchmark, you should implement a new method
+        `_xxx_data_loader`(like :meth:`_app_data_loader`, :meth:`_d4rl_data_loader`)
+        and add this method into :meth:`_data_loader_list`.
 
     :param config: the configuration.
     """
@@ -65,14 +71,18 @@ class Data(BaseData):
     def __init__(self, config) -> None:
         app_config = config.app_config
         env_config = config.model_config.env.env_external
-        if app_config.data_path is not None:  # For real-world application experiments.
-            data_path = app_config.data_path
-            data_loader_name = 'app'
+        data_loader_name = config.model_config.train.data_loader_name
+        if data_loader_name is 'app':  # For real-world application experiments.
+            try:
+                data_path = app_config.data_path
+            except:
+                raise AttributeError('There is no data file for real-world application experiments！')
         elif env_config.data_file_path is not None:
             data_path = env_config.data_file_path
             data_loader_name = env_config.benchmark_name
         else:
             raise ValueError('There is no data file to load!')
+        assert isinstance(data_path, str)
         logging.info(f'Loading the offline dataset file from {data_path}.')
         if data_loader_name not in self._data_loader_list.keys():
             raise NotImplementedError(f'There is no data loader for {data_loader_name}!')
@@ -96,7 +106,7 @@ class Data(BaseData):
         self._data.add_transitions(s1, a1, s2, a2, reward, cost, done)
 
     def _build_data_loader(self) -> None:
-        self._data_loader = self._data_loader_list[self._data_loader_name]
+        self._data_loader = self._data_loader_list[self._data_loader_name]()
 
     def _app_data_loader(self):
         raise NotImplementedError
@@ -111,11 +121,11 @@ class Data(BaseData):
         )
 
     @property
-    def _data_loader_list(self) -> Dict[str, BaseDataLoader]:
+    def _data_loader_list(self) -> Dict[str, Callable[..., BaseDataLoader]]:
         """A dict of the alternative Data loaders."""
         return dict(
-            app=self._app_data_loader(),
-            d4rl=self._d4rl_data_loader(),
+            app=self._app_data_loader,
+            d4rl=self._d4rl_data_loader,
         )
 
 

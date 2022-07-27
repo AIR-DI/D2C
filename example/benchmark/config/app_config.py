@@ -1,7 +1,7 @@
 """The config for the application"""
 
 import numpy as np
-from AIControlOpt_lib.utils.utils import Flags
+from d2c.utils.utils import Flags
 
 
 # def reward_function(past_a, s, a, next_s):
@@ -41,6 +41,7 @@ app_config = Flags(
     action_min=None,
     done_function=pack_func(done_function),
     # data
+    data_path=None,
     split_data_buffer=False,
 )
 
