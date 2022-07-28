@@ -2,13 +2,12 @@
 
 import torch
 import collections
-import numpy as np
 from torch import nn, Tensor
 from absl import logging
 from abc import ABC, abstractmethod
 from easydict import EasyDict
 from typing import Union, Optional, List, Tuple, Dict, Sequence, Any, Iterator
-from d2c.envs.base import BaseEnv
+from d2c.envs import LeaEnv
 from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.utils import utils, logger
 
@@ -29,7 +28,7 @@ class BaseAgent(ABC):
         that construct an agent;
     * ``test_policies()``: return the trained policy of this agent
 
-    :param BaseEnv env: the environment learned that contains the trained dynamics.
+    :param BaseEnv env: the environment learned that contains the dynamics model.
     :param Dict model_params: the parameters for construct the models.
     :param Dict optimizers: the parameters for create the optimizers.
     :param ReplayBuffer train_data: the dataset of the batch data.
@@ -41,12 +40,11 @@ class BaseAgent(ABC):
     :param ReplayBuffer empty_dataset: a replay buffer for storing the generated virtual
         data by the simulator.
     :param device: which device to create this model on. Default to None.
-
     """
 
     def __init__(
             self,
-            env: BaseEnv,
+            env: LeaEnv,
             model_params: Union[Dict, EasyDict, Any],
             optimizers: Union[Dict, EasyDict, Any],
             train_data: ReplayBuffer,
@@ -60,8 +58,8 @@ class BaseAgent(ABC):
     ) -> None:
         # the Env with the dynamics model pre-trained
         self._env = env
-        self._observation_space = env.observation_space()
-        self._action_space = env.action_space()
+        self._observation_space = env.observation_space
+        self._action_space = env.action_space
         self._a_max = torch.tensor(self._action_space.high, device=device, dtype=torch.float32)
         self._a_min = torch.tensor(self._action_space.low, device=device, dtype=torch.float32)
         self._a_dim = self._action_space.shape[0]
@@ -142,7 +140,7 @@ class BaseAgent(ABC):
         summary_str = utils.get_summary_str(step, info)
         logging.info(summary_str)
 
-    def write_train_summary(self, summary_writer):
+    def write_train_summary(self, summary_writer) -> None:
         """Record the training information.
 
         :param summary_writer: a tf file writer.
@@ -213,13 +211,13 @@ class BaseAgentModule(ABC, nn.Module):
 
     def __init__(
             self,
-            modules=None,
+            modules: utils.Flags = None,
     ) -> None:
         super(BaseAgentModule, self).__init__()
         self._modules = modules
         self._build_modules()
 
     @abstractmethod
-    def _build_modules(self):
+    def _build_modules(self) -> None:
         pass
 

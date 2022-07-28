@@ -90,6 +90,11 @@ class ReplayBuffer:
 
         return OrderedDict((k, np.array(v[ind])) for k, v in self._data.items())  # TODO return torch.Tensor
 
+    def get_batch_indices(self, indices: np.ndarray) -> OrderedDict:
+        """Get the batch of data according to the given indices."""
+        assert np.max(indices) < self._size, 'There is an index exceeding the size of the buffer.'
+        return OrderedDict((k, np.array(v[indices])) for k, v in self._data.items())  # TODO return torch.Tensor
+
     def add_transitions(
             self,
             state: np.ndarray,

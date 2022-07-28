@@ -13,7 +13,7 @@ class DeterministicPolicy(nn.Module):
         super(DeterministicPolicy, self).__init__()
         self._a_network = a_network
 
-    def forward(self, observation: Union[np.ndarray, Tensor]) -> Tensor:
+    def forward(self, observation: Union[np.ndarray, Tensor]) -> np.ndarray:
         with torch.no_grad():
             action = self._a_network(observation)
-        return action
+        return action.cpu().numpy()

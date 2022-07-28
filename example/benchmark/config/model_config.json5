@@ -22,36 +22,21 @@
     }
   },
   env: {
-    basic_info: {state_dim: null, action_dim: null},
+    basic_info: {state_dim: null, state_min: null, state_max: null,
+      action_dim: null, action_min: null, action_max: null},
     // Parameters for Env which is provided externally
     external: {benchmark_name: 'd4rl', data_source: 'mujoco', env_name: 'Hopper-v2', data_name: 'hopper_random-v1',
     data_file_path: null, state_normalize: false, reward_normalize: true, num_transitions: -1,
     score_normalize: false, score_norm_min: null, score_norm_max: null},
     learned: {
-      // 'dnn', 'prob', 'rnn', 'adm'
-      dynamic_module_type: 'prob',
+      // 'mlp', 'prob', 'rnn', 'adm'
+      dynamic_module_type: 'mlp',
       // If the dynamics predict the reward or not.
       with_reward: true,
       // parameters for each type of dynmamics models
-      dnn: {
+      mlp: {
         model_params: [[200, 200], 3],
-        optimizers: [['adam', 1e-3],],
-      },
-      prob: {
-        model_params: [[200, 200, 200], 3],
-        optimizers: [['adam', 1e-3],],
-        mode: 'local',
-      },
-      rnn: {
-        model_params: [[200, 200], 3],
-        optimizers: [['adam', 1e-3],],
-        warm_steps: 5,
-        out_steps: 10,
-        mode: 'local',
-      },
-      adm: {
-        model_params: null,
-        optimizers: null,
+        optimizers: ['adam', 1e-3],
       },
     }
   },

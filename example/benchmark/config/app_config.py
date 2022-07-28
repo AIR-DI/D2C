@@ -32,13 +32,6 @@ def pack_func(init_func):
 
 
 app_config = Flags(
-    # state and action
-    state_dim=None,
-    state_max=np.inf,
-    state_min=-np.inf,
-    action_dim=None,
-    action_max=None,
-    action_min=None,
     done_function=pack_func(done_function),
     # data
     data_path=None,

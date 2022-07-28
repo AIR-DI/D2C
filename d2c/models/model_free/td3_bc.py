@@ -136,7 +136,7 @@ class TD3BCAgent(BaseAgent):
         info.update(self._p_info)
         return info
 
-    def _build_test_policies(self):
+    def _build_test_policies(self) -> None:
         policy = policies.DeterministicPolicy(
             a_network=self._agent_module.p_current_net
         )
