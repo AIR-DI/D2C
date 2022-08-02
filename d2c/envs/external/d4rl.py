@@ -17,8 +17,8 @@ class D4rlEnv(BaseEnv):
     def __init__(
             self,
             env_name: str,
-            obs_shift: np.ndarray,
-            obs_scale: np.ndarray
+            obs_shift: np.ndarray = None,
+            obs_scale: np.ndarray = None,
     ) -> None:
         super(D4rlEnv, self).__init__()
         self._env_name = env_name

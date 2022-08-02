@@ -1,4 +1,4 @@
-from typing import Union, Any, Callable, Dict
+from typing import Union, Any, Callable
 from d2c.envs.learned.dynamics.base import BaseDyna
 from d2c.envs.learned.dynamics.mlp import MlpDyna
 from d2c.utils.replaybuffer import ReplayBuffer

@@ -1,8 +1,10 @@
 """A collection of some little utils."""
 
+import os
+import random
 import numpy as np
 import torch
-from typing import Dict
+from typing import Dict, Generator, List
 
 
 def get_summary_str(step: int = None, info: Dict = None, prefix: str = '') -> str:
@@ -34,3 +36,21 @@ class Flags(object):
         for key, val in kwargs.items():
             setattr(self, key, val)
 
+
+def chain_gene(*args: List[Generator]) -> Generator:
+    """Connect several Generator objects into one Generator object."""
+    for x in args:
+        yield from x
+
+
+def maybe_makedirs(log_dir):
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+
+def set_seed(seed):
+    seed %= 4294967294
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    print("Using seed {}".format(seed))

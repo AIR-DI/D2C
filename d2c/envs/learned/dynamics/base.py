@@ -2,9 +2,9 @@
 
 import torch
 import collections
+import logging
 import numpy as np
 from torch import nn, Tensor
-from absl import logging
 from abc import ABC, abstractmethod
 from easydict import EasyDict
 from typing import Union, Optional, List, Tuple, Dict, Sequence, Any, Iterator

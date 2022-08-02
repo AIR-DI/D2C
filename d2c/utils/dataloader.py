@@ -3,14 +3,12 @@
 There are data_loaders for benchmarks and real-world applications.
 """
 
-import os
 import h5py
+import logging
 import numpy as np
-import pandas as pd
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 from collections import OrderedDict
-from absl import logging
 
 
 class BaseDataLoader(ABC):
@@ -35,6 +33,12 @@ class BaseDataLoader(ABC):
 
         :return: A namedtuple that contains the elements of the transitions.
         """
+        pass
+
+    @abstractmethod
+    @property
+    def state_shift_scale(self):
+        """Get the shift and scale of the state normalization."""
         pass
 
 
@@ -68,20 +72,19 @@ class BaseBMLoader(BaseDataLoader):
         self._file_path = file_path
         self._normalize_states = normalize_states
         self._scale_rewards = scale_rewards
+        self._obs_shift, self._obs_scale = None, None
 
     def _load_data(self):
         raise NotImplementedError
 
-    def get_transitions(self) -> Tuple[OrderedDict, np.ndarray, np.ndarray]:
+    def get_transitions(self) -> OrderedDict:
         """Get the transitions from the dataset.
 
         :return: A namedtuple that contains the elements of the transitions.
         """
         demo_s1, demo_a1, demo_s2, demo_a2, demo_r, demo_c, demo_d = self._load_data()
         if self._normalize_states:
-            demo_s1, demo_s2, shift, scale = self._norm_state(demo_s1, demo_s2)
-        else:
-            shift, scale = None, None
+            demo_s1, demo_s2, self._obs_shift, self._obs_scale = self._norm_state(demo_s1, demo_s2)
         if self._scale_rewards:
             demo_r = self._scale_r(demo_r)
         transitions = OrderedDict(
@@ -93,7 +96,7 @@ class BaseBMLoader(BaseDataLoader):
             cost=demo_c,
             done=demo_d
         )
-        return transitions, shift, scale
+        return transitions
 
     @staticmethod
     def _norm_state(s1: np.ndarray, s2: np.ndarray)\
@@ -132,6 +135,10 @@ class BaseBMLoader(BaseDataLoader):
 
         h5file.visititems(visitor)
         return keys
+
+    @property
+    def state_shift_scale(self) -> Tuple[np.ndarray, np.ndarray]:
+        return self._obs_shift, self._obs_scale
 
 
 class D4rlDataLoader(BaseBMLoader):

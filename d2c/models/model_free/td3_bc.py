@@ -3,7 +3,6 @@ Implementation of TD3+BC (A Minimalist Approach to Offline Reinforcement Learnin
 Paper: https://arxiv.org/pdf/2106.06860.pdf
 """
 import collections
-
 import torch
 from torch import nn, Tensor
 from typing import Union, Tuple, Any, Sequence, Dict, Iterator
@@ -201,20 +200,20 @@ class AgentModule(BaseAgentModule):
         return self._q_nets
 
     @property
-    def q_source_variables(self) -> Tuple:
+    def q_source_variables(self) -> Iterator:
         """The parameters of all the source Q networks."""
         vars_ = []
         for q_net, _ in self._q_nets:
-            vars_ += list(q_net.parameters())
-        return tuple(vars_)
+            vars_.append(q_net.parameters())
+        return utils.chain_gene(*vars_)
 
     @property
-    def q_target_variables(self) -> Tuple:
+    def q_target_variables(self) -> Iterator:
         """The parameters of all the target Q networks."""
         vars_ = []
         for _, q_net in self._q_nets:
-            vars_ += list(q_net.parameters())
-        return tuple(vars_)
+            vars_.append(q_net.parameters())
+        return utils.chain_gene(*vars_)
 
     @property
     def p_current_net(self) -> nn.Module:

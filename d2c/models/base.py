@@ -2,11 +2,12 @@
 
 import torch
 import collections
+import logging
 from torch import nn, Tensor
-from absl import logging
 from abc import ABC, abstractmethod
 from easydict import EasyDict
 from typing import Union, Optional, List, Tuple, Dict, Sequence, Any, Iterator
+from torch.utils.tensorboard import SummaryWriter
 from d2c.envs import LeaEnv
 from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.utils import utils, logger
@@ -140,10 +141,10 @@ class BaseAgent(ABC):
         summary_str = utils.get_summary_str(step, info)
         logging.info(summary_str)
 
-    def write_train_summary(self, summary_writer) -> None:
+    def write_train_summary(self, summary_writer: SummaryWriter) -> None:
         """Record the training information.
 
-        :param summary_writer: a tf file writer.
+        :param SummaryWriter summary_writer: a file writer.
         """
         info = self._train_info
         step = self._global_step
@@ -211,7 +212,7 @@ class BaseAgentModule(ABC, nn.Module):
 
     def __init__(
             self,
-            modules: utils.Flags = None,
+            modules: Union[utils.Flags, Any],
     ) -> None:
         super(BaseAgentModule, self).__init__()
         self._modules = modules

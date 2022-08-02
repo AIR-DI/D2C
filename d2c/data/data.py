@@ -1,8 +1,9 @@
 """Loading data and constructing the buffer."""
 
+import logging
+import numpy as np
 from abc import ABC, abstractmethod
-from absl import logging
-from typing import Dict, Callable
+from typing import Dict, Callable, Tuple
 from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.utils.dataloader import AppDataLoader, D4rlDataLoader, BaseDataLoader
 
@@ -93,7 +94,7 @@ class Data(BaseData):
 
     def _build_data(self) -> None:
         self._build_data_loader()
-        transitions, self._shift, self._scale = self._data_loader.get_transitions()
+        transitions = self._data_loader.get_transitions()
         s1, a1, s2, a2, reward, cost, done = [transitions[k] for k in transitions.keys()]
         self._buffer_size = s1.shape[0]
         state_dim = s1.shape[-1]
@@ -127,6 +128,10 @@ class Data(BaseData):
             app=self._app_data_loader,
             d4rl=self._d4rl_data_loader,
         )
+
+    @property
+    def state_shift_scale(self) -> Tuple[np.ndarray, np.ndarray]:
+        return self._data_loader.state_shift_scale
 
 
 

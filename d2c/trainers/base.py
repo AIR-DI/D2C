@@ -1,7 +1,10 @@
 """Trainers for all models in the RL algorithms"""
 from abc import ABC, abstractmethod
+from typing import Any, Union
 from d2c.utils import utils
-
+from d2c.models import BaseAgent
+from d2c.envs import LeaEnv
+from d2c.utils.replaybuffer import ReplayBuffer
 
 
 class BaseTrainer(ABC):
@@ -26,22 +29,28 @@ class BaseTrainer(ABC):
     * ``_train_agent()``: train the RL agent. The main training process of the most RL algorithms \
         is here.
 
-    :param Agent agent: the agent of the RL algorithm.
-    :param Env env: the env with the dynamics which will be trained.
+    :param BaseAgent agent: the agent of the RL algorithm.
+    :param LeaEnv env: the env with the dynamics which will be trained.
     :param FileReplayBuffer train_data: the replay buffer that contains the batch data.
     :param config: the configuration.
     """
 
-    def __init__(self, agent, env, train_data, config):
+    def __init__(
+            self,
+            agent: Union[BaseAgent, Any],
+            env: LeaEnv,
+            train_data: ReplayBuffer,
+            config: Union[Any, utils.Flags]
+    ) -> None:
         self._agent = agent
         self._env = env
         self._train_data = train_data
         self._config = config
-        self._app_config = config.app_config
-        self._model_config = config.model_config
-        self._train_config = config.model_config.train
-        utils.maybe_makedirs(self._train_config.model_dir)
-        utils.set_seed(self._train_config.seed)  # set the random seed
+        self._app_cfg = config.app_config
+        self._model_cfg = config.model_config
+        self._train_cfg = config.model_config.train
+        utils.maybe_makedirs(self._train_cfg.model_dir)
+        utils.set_seed(self._train_cfg.seed)  # set the random seed
 
     @abstractmethod
     def train(self):
