@@ -83,7 +83,7 @@ class LeaEnv(BaseEnv):
             s: Union[np.ndarray, Tensor],
             a: Union[np.ndarray, Tensor],
             return_dist: bool = False
-    ) -> Optional[List[np.ndarray], Tuple[List[np.ndarray], List[Tuple]]]:
+    ) -> Union[List, Tuple[List, List[Tuple]]]:
         s_ = torch.as_tensor(s, device=self._device, dtype=torch.float32)
         a_ = torch.as_tensor(a, device=self._device, dtype=torch.float32)
         s_p = self._d_fns(s_, a_)
@@ -165,7 +165,7 @@ class LeaEnv(BaseEnv):
             s: Union[np.ndarray, Tensor],
             a: Union[np.ndarray, Tensor],
             with_dist: bool = False
-    ) -> Optional[Tuple[List, List, List], Tuple[List, List, List, List]]:
+    ) -> Union[Tuple[List, List, List], Tuple[List, List, List, List]]:
         """ Run one timestep of the environment's dynamics.
 
         This method is usually used in RL training process.

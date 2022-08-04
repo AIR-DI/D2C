@@ -36,7 +36,6 @@ class BaseDataLoader(ABC):
         pass
 
     @abstractmethod
-    @property
     def state_shift_scale(self):
         """Get the shift and scale of the state normalization."""
         pass
@@ -44,7 +43,7 @@ class BaseDataLoader(ABC):
 
 class AppDataLoader(BaseDataLoader):
     """The data loader for the real-world applications dataset."""
-    raise NotImplementedError
+    pass
 
 
 class BaseBMLoader(BaseDataLoader):

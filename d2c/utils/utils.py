@@ -54,3 +54,7 @@ def set_seed(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     print("Using seed {}".format(seed))
+
+
+def abs_file_path(file, relative_path):
+    return os.path.abspath(os.path.join(os.path.split(os.path.abspath(file))[0], relative_path))

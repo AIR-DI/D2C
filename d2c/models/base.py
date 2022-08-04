@@ -108,7 +108,6 @@ class BaseAgent(ABC):
     def _get_train_batch(self) -> Dict:
         """Samples and constructs batch of transitions from the training data set."""
         _batch = self._train_data.sample_batch(self._batch_size)
-        _batch['dsc'] = 1 - _batch['done']  # done -> discount
 
         return _batch
 

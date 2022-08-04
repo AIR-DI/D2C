@@ -1,4 +1,4 @@
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Union
 from d2c.envs import BaseEnv
 from d2c.envs.external.d4rl import D4rlEnv
 
@@ -24,7 +24,7 @@ def benchmark_env(
         config: Optional[Any] = None,
         benchmark_name: Optional[str] = None,
         **kwargs: Any,
-) -> Optional[BaseEnv, Callable[..., BaseEnv]]:
+) -> Union[BaseEnv, Callable[..., BaseEnv]]:
     """Get the Environment according to the benchmark.
 
     :param config: the configuration object. When it is not None,

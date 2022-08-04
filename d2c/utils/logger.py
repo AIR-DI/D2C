@@ -22,6 +22,10 @@ class WandbLogger:
     :param str name: W&B run name. Default to None. If None, random name is assigned.
     :param str run_id: run id of W&B run to be resumed. Default to None.
     :param str dir_: An absolute path to a directory where metadata will be stored.
+    :param bool reinit: Allow multiple `wandb.init()` calls in the same
+        process. (default: `False`)
+    :param str mode: Can be `"online"`, `"offline"` or `"disabled"`. Defaults to
+        online.
     """
 
     def __init__(
@@ -32,6 +36,8 @@ class WandbLogger:
             run_id: Optional[str] = None,
             config: Optional[dict] = None,
             dir_: Optional[str] = None,
+            reinit: Optional[bool] = False,
+            mode: Optional[str] = 'online',
     ) -> None:
         if project is None:
             project = os.getenv("WANDB_PROJECT", "d2c")
@@ -42,6 +48,8 @@ class WandbLogger:
             entity=entity,
             config=config,  # type: ignore
             dir=dir_,
+            reinit=reinit,
+            mode=mode,
         )
 
     def finish(self) -> None:

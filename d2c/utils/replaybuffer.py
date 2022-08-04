@@ -1,8 +1,9 @@
 """The replay buffer for RL training."""
 
+import torch
 import numpy as np
 from collections import OrderedDict
-from typing import Union
+from typing import Union, Optional
 
 
 class ReplayBuffer:
@@ -19,18 +20,21 @@ class ReplayBuffer:
             self,
             state_dim: int,
             action_dim: int,
-            max_size: int = int(2e6)
+            max_size: int = int(2e6),
+            device: Optional[Union[str, int, torch.device]] = None,
     ) -> None:
         self._max_size = max_size
+        self._device = device
         self._ptr = 0
         self._size = 0
-        self._state = np.zeros((max_size, state_dim))
-        self._action = np.zeros((max_size, action_dim))
-        self._next_state = np.zeros((max_size, state_dim))
-        self._next_action = np.zeros((max_size, action_dim))
-        self._reward = np.zeros(max_size)
-        self._cost = np.zeros(max_size)
-        self._done = np.zeros(max_size)
+        self._state = torch.empty((max_size, state_dim), dtype=torch.float32, device=self._device)
+        self._action = torch.empty((max_size, action_dim), dtype=torch.float32, device=self._device)
+        self._next_state = torch.empty((max_size, state_dim), dtype=torch.float32, device=self._device)
+        self._next_action = torch.empty((max_size, action_dim), dtype=torch.float32, device=self._device)
+        self._reward = torch.empty(max_size, dtype=torch.float32, device=self._device)
+        self._cost = torch.empty(max_size, dtype=torch.float32, device=self._device)
+        self._done = torch.empty(max_size, dtype=torch.float32, device=self._device)
+        self._dsc = torch.empty(max_size, dtype=torch.float32, device=self._device)
         self._data = OrderedDict(
             s1=self._state,
             a1=self._action,
@@ -38,18 +42,19 @@ class ReplayBuffer:
             a2=self._next_action,
             reward=self._reward,
             cost=self._cost,
-            done=self._done
+            done=self._done,
+            dsc=self._dsc,
         )
 
     def add(
             self,
-            state: np.ndarray,
-            action: np.ndarray,
-            next_state: np.ndarray,
-            next_action: np.ndarray,
-            reward: Union[np.ndarray, float, int],
-            done: Union[np.ndarray, float, int],
-            cost: Union[np.ndarray, float, int] = None
+            state: Union[np.ndarray, torch.Tensor],
+            action: Union[np.ndarray, torch.Tensor],
+            next_state: Union[np.ndarray, torch.Tensor],
+            next_action: Union[np.ndarray, torch.Tensor],
+            reward: Union[np.ndarray, torch.Tensor, float, int],
+            done: Union[np.ndarray, torch.Tensor, float, int],
+            cost: Union[np.ndarray, torch.Tensor, float, int] = None
     ) -> None:
         """Add a transition into the buffer.
 
@@ -65,7 +70,7 @@ class ReplayBuffer:
             assert len(state.shape) == 2
             assert state.shape[0] == 1, 'The shape of the input data is wrong!'
         if cost is None:
-            cost = np.zeros([1])
+            cost = torch.zeros([1], dtype=torch.float32, device=self._device)
         transition = OrderedDict(
             s1=state,
             a1=action,
@@ -73,8 +78,12 @@ class ReplayBuffer:
             a2=next_action,
             reward=reward,
             cost=cost,
-            done=done
+            done=done,
+            dsc=1-done,
         )
+        if isinstance(state, np.ndarray):
+            for k, v in transition.items():
+                transition[k] = torch.as_tensor(v, dtype=torch.float32, device=self._device)
         for k, v in self._data.items():
             v[self._ptr] = transition[k]
         # Update the _ptr and _size.
@@ -86,24 +95,25 @@ class ReplayBuffer:
 
         :param int batch_size: the batch size of the sample data.
         """
-        ind = np.random.randint(0, self._size, size=batch_size)
+        ind = torch.randint(0, self._size, size=(batch_size,), device=self._device)
 
-        return OrderedDict((k, np.array(v[ind])) for k, v in self._data.items())  # TODO return torch.Tensor
+        return OrderedDict((k, v[ind]) for k, v in self._data.items())
 
     def get_batch_indices(self, indices: np.ndarray) -> OrderedDict:
         """Get the batch of data according to the given indices."""
         assert np.max(indices) < self._size, 'There is an index exceeding the size of the buffer.'
-        return OrderedDict((k, np.array(v[indices])) for k, v in self._data.items())  # TODO return torch.Tensor
+        indices = torch.as_tensor(indices, dtype=torch.long, device=self._device)
+        return OrderedDict((k, v[indices]) for k, v in self._data.items())
 
     def add_transitions(
             self,
-            state: np.ndarray,
-            action: np.ndarray,
-            next_state: np.ndarray,
-            next_action: np.ndarray,
-            reward: np.ndarray,
-            done: np.ndarray,
-            cost: np.ndarray = None
+            state: Union[np.ndarray, torch.Tensor],
+            action: Union[np.ndarray, torch.Tensor],
+            next_state: Union[np.ndarray, torch.Tensor],
+            next_action: Union[np.ndarray, torch.Tensor],
+            reward: Union[np.ndarray, torch.Tensor],
+            done: Union[np.ndarray, torch.Tensor],
+            cost: Union[np.ndarray, torch.Tensor] = None
     ) -> None:
         """Add a batch of transitions into the buffer.
 
@@ -117,14 +127,7 @@ class ReplayBuffer:
         """
         batch_size = state.shape[0]
         if cost is None:
-            cost = np.zeros(batch_size)
-        tail_space = self._max_size - self._ptr
-        if batch_size <= tail_space:
-            indices = self._ptr + np.arange(batch_size)
-        else:
-            tail_indices = np.arange(self._ptr, self._max_size)
-            head_indices = np.arange(batch_size - tail_space)
-            indices = np.concatenate([tail_indices, head_indices])
+            cost = torch.zeros(batch_size, dtype=torch.float32, device=self._device)
         transitions = OrderedDict(
             s1=state,
             a1=action,
@@ -132,8 +135,20 @@ class ReplayBuffer:
             a2=next_action,
             reward=reward,
             cost=cost,
-            done=done
+            done=done,
+            dsc=1-done,
         )
+        for k, v in transitions.items():
+            transitions[k] = torch.as_tensor(v, dtype=torch.float32, device=self._device)
+
+        tail_space = self._max_size - self._ptr
+        if batch_size <= tail_space:
+            indices = self._ptr + torch.arange(batch_size, device=self._device)
+        else:
+            tail_indices = torch.arange(self._ptr, self._max_size, device=self._device)
+            head_indices = torch.arange(batch_size - tail_space, device=self._device)
+            indices = torch.cat([tail_indices, head_indices])
+
         for k, v in self._data.items():
             v[indices] = transitions[k]
         # Update the _ptr and _size.
@@ -142,7 +157,7 @@ class ReplayBuffer:
 
     @property
     def data(self) -> OrderedDict:
-        """All of the transitions in the buffer."""
+        """All the transitions in the buffer."""
         return self._data
 
     @property

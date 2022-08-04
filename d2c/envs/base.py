@@ -64,7 +64,7 @@ class BaseEnv(gym.Env, ABC):
         seed: Optional[int] = None,
         return_info: bool = False,
         options: Optional[dict] = None,
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         """Resets the environment to an initial state and returns an initial
         observation.
 

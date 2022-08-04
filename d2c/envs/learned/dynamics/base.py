@@ -103,7 +103,6 @@ class BaseDyna(ABC):
     def _get_batch(self, batch_indices: np.ndarray) -> Dict:
         """Samples and constructs batch of transitions from the training data set."""
         _batch = self._train_data.get_batch_indices(batch_indices)
-        _batch['dsc'] = 1 - _batch['done']  # done -> discount
 
         return _batch
 

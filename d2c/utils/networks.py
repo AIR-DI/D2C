@@ -51,7 +51,7 @@ class ActorNetwork(nn.Module):
         of class: ``gym.spaces.Box``.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
-    :param device: which device to create this model on. Default to None.
+    :param device: which device to create this model on. Default to 'cpu'.
     """
 
     def __init__(
@@ -59,7 +59,7 @@ class ActorNetwork(nn.Module):
             observation_space: Box,
             action_space: Box,
             fc_layer_params: Sequence[int] = (),
-            device: Optional[Union[str, int, torch.device]] = None,
+            device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
         super(ActorNetwork, self).__init__()
         self._device = device
@@ -78,8 +78,7 @@ class ActorNetwork(nn.Module):
 
     def _get_output(self, state: Union[np.ndarray, torch.Tensor]) \
             -> Tuple[Distribution, torch.Tensor]:
-        if self._device is not None:
-            state = torch.as_tensor(state, device=self._device, dtype=torch.float32)
+        state = torch.as_tensor(state, device=self._device, dtype=torch.float32)
         h = self._model(state)
         mean, log_std = torch.split(h, split_size_or_sections=[self._action_dim, self._action_dim], dim=-1)
         a_tanh_mode = torch.tanh(mean) * self._action_mags + self._action_means
@@ -108,6 +107,7 @@ class ActorNetwork(nn.Module):
 
     def get_log_density(self, state: Tensor, action: Tensor) -> Tensor:
         a_dist, _ = self._get_output(state)
+        action = torch.as_tensor(action, dtype=torch.float32, device=self._device)
         log_density = a_dist.log_prob(action)
         return log_density
 
@@ -135,7 +135,7 @@ class ActorNetworkDet(nn.Module):
         of class: ``gym.spaces.Box``.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
-    :param device: which device to create this model on. Default to None.
+    :param device: which device to create this model on. Default to 'cpu'.
     """
 
     def __init__(
@@ -143,7 +143,7 @@ class ActorNetworkDet(nn.Module):
             observation_space: Box,
             action_space: Box,
             fc_layer_params: Sequence[int] = (),
-            device: Optional[Union[str, int, torch.device]] = None,
+            device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
         super(ActorNetworkDet, self).__init__()
         self._device = device
@@ -160,8 +160,7 @@ class ActorNetworkDet(nn.Module):
             self._action_space, self._device)
 
     def forward(self, state: Union[np.ndarray, Tensor]) -> Tensor:
-        if self._device is not None:
-            state = torch.as_tensor(state, device=self._device, dtype=torch.float32)
+        state = torch.as_tensor(state, device=self._device, dtype=torch.float32)
         a = self._model(state)
         return torch.tanh(a) * self._action_mags + self._action_means
 
@@ -179,7 +178,7 @@ class CriticNetwork(nn.Module):
         of class: ``gym.spaces.Box``.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
-    :param device: which device to create this model on. Default to None.
+    :param device: which device to create this model on. Default to 'cpu'.
     """
 
     def __init__(
@@ -187,7 +186,7 @@ class CriticNetwork(nn.Module):
             observation_space: Box,
             action_space: Box,
             fc_layer_params: Sequence[int] = (),
-            device: Optional[Union[str, int, torch.device]] = None,
+            device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
         super(CriticNetwork, self).__init__()
         self._device = device
@@ -205,9 +204,8 @@ class CriticNetwork(nn.Module):
             state: Union[np.ndarray, Tensor],
             action: Union[np.ndarray, Tensor]
     ) -> Tensor:
-        if self._device is not None:
-            state = torch.as_tensor(state, device=self._device, dtype=torch.float32)
-            action = torch.as_tensor(action, device=self._device, dtype=torch.float32)
+        state = torch.as_tensor(state, device=self._device, dtype=torch.float32)
+        action = torch.as_tensor(action, device=self._device, dtype=torch.float32)
         h = torch.cat([state, action], dim=-1)
         h = self._model(h)
         return torch.reshape(h, [-1])
@@ -220,14 +218,14 @@ class MLP(nn.Module):
     :param int output_dim: the dimension of the output.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
-    :param device: which device to create this model on. Default to None.
+    :param device: which device to create this model on. Default to 'cpu'.
     """
     def __init__(
             self,
             input_dim: int,
             output_dim: int,
             fc_layer_params: Sequence[int] = (),
-            device: Optional[Union[str, int, torch.device]] = None,
+            device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
         super(MLP, self).__init__()
         self._device = device
@@ -239,8 +237,7 @@ class MLP(nn.Module):
         self._model = nn.Sequential(*self._layers)
 
     def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
-        if self._device is not None:
-            inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
+        inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
         return self._model(inputs)
 
 
