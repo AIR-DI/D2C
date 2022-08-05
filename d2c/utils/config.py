@@ -79,15 +79,24 @@ class ConfigBuilder:
             app_config: Flags,
             model_config_path: str,
             work_abs_dir: str,
-            command_args: Dict
+            command_args: Optional[Dict] = None
     ) -> None:
         self._command_args = command_args
+        self._check_command_args()
         self._app_cfg = app_config
         self._model_cfg_path = model_config_path
         self._work_abs_dir = work_abs_dir
         self._env_info = None
         self._model_cfg = None
         self._update_model_cfg()
+
+    def _check_command_args(self):
+        """Check the input command parameters."""
+        assert isinstance(self._command_args, dict)
+        for k in self._command_args.keys():
+            _k = k.split('.')[0]
+            if _k not in ['model', 'env', 'train', 'eval', 'interface']:
+                raise KeyError(f'The key {_k} is not in the model_config!')
 
     def _update_model_cfg(self) -> None:
         self._model_cfg = update_config(self._model_cfg_path, self._command_args)
@@ -225,36 +234,39 @@ class ConfigBuilder:
             str(self._env_ext.num_transitions)+'_'+str(self._env_ext.state_normalize),
         )
         model_name = self._model_cfg.model.model_name
-        behavior_ckpt_dir = os.path.join(
-            model_dir,
-            'behavior',
-            self._model_cfg.train.behavior_ckpt_name,
-        )
-        dynamics_ckpt_dir = os.path.join(
-            model_dir,
-            'dynamics',
-            self._model_cfg.env.learned.dynamic_module_type,
-            self._model_cfg.train.dynamics_ckpt_name,
-        )
-        q_ckpt_dir = os.path.join(model_dir, 'Q', self._model_cfg.train.q_ckpt_name)
-        vae_s_ckpt_dir = os.path.join(model_dir, 'vae_s', self._model_cfg.train.vae_s_ckpt_name)
-        agent_ckpt_dir = os.path.join(
-            model_dir,
-            'agent',
-            model_name,
-            str(self._model_cfg.train.agent_ckpt_name),
-            str(self._model_cfg.train.seed),
-            'agent',
-        )
-        model_dir_dict = dict(
-            behavior_ckpt_dir=behavior_ckpt_dir,
-            dynamics_ckpt_dir=dynamics_ckpt_dir,
-            q_ckpt_dir=q_ckpt_dir,
-            vae_s_ckpt_dir=vae_s_ckpt_dir,
-            agent_ckpt_dir=agent_ckpt_dir,
-        )
-        self._model_cfg.train.update(model_dir_dict)
 
+        if not self._model_cfg.train.get('behavior_ckpt_dir'):
+            behavior_ckpt_dir = os.path.join(
+                model_dir,
+                'behavior',
+                self._model_cfg.train.behavior_ckpt_name,
+            )
+            self._model_cfg.train.update(behavior_ckpt_dir=behavior_ckpt_dir)
 
+        if not self._model_cfg.train.get('dynamics_ckpt_dir'):
+            dynamics_ckpt_dir = os.path.join(
+                model_dir,
+                'dynamics',
+                self._model_cfg.env.learned.dynamic_module_type,
+                self._model_cfg.train.dynamics_ckpt_name,
+            )
+            self._model_cfg.train.update(dynamics_ckpt_dir=dynamics_ckpt_dir)
 
+        if not self._model_cfg.train.get('q_ckpt_dir'):
+            q_ckpt_dir = os.path.join(model_dir, 'Q', self._model_cfg.train.q_ckpt_name)
+            self._model_cfg.train.update(q_ckpt_dir=q_ckpt_dir)
 
+        if not self._model_cfg.train.get('vae_s_ckpt_dir'):
+            vae_s_ckpt_dir = os.path.join(model_dir, 'vae_s', self._model_cfg.train.vae_s_ckpt_name)
+            self._model_cfg.train.update(vae_s_ckpt_dir=vae_s_ckpt_dir)
+
+        if not self._model_cfg.train.get('agent_ckpt_dir'):
+            agent_ckpt_dir = os.path.join(
+                model_dir,
+                'agent',
+                model_name,
+                str(self._model_cfg.train.agent_ckpt_name),
+                str(self._model_cfg.train.seed),
+                'agent',
+            )
+            self._model_cfg.train.update(agent_ckpt_dir=agent_ckpt_dir)

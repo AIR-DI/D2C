@@ -14,6 +14,7 @@ class ReplayBuffer:
     :param int state_dim: the dimension of the state.
     :param int action_dim: the dimension of the action.
     :param int max_size: the maximum size of the buffer.
+    :param str device: which device to create the data on. Default to 'cpu'.
     """
 
     def __init__(
@@ -21,7 +22,7 @@ class ReplayBuffer:
             state_dim: int,
             action_dim: int,
             max_size: int = int(2e6),
-            device: Optional[Union[str, int, torch.device]] = None,
+            device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
         self._max_size = max_size
         self._device = device

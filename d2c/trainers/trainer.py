@@ -112,6 +112,7 @@ class Trainer(BaseTrainer):
 
     def _train_agent(self) -> None:
         agent_ckpt_dir = self._train_cfg.agent_ckpt_dir
+        utils.maybe_makedirs(os.path.dirname(agent_ckpt_dir))
         train_summary_dir = agent_ckpt_dir + '_train_log'
         train_summary_writer = SummaryWriter(train_summary_dir)
 
@@ -159,6 +160,7 @@ class Trainer(BaseTrainer):
             train_summary_writer = None
         else:
             logging.info(f'No trained checkpoint, train the {_model_ckpt_dir}')
+            utils.maybe_makedirs(os.path.dirname(_model_ckpt_dir))
             train_summary_writer = SummaryWriter(
                 _train_summary_dir
             )

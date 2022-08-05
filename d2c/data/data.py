@@ -71,8 +71,9 @@ class Data(BaseData):
 
     def __init__(self, config) -> None:
         app_config = config.app_config
-        env_config = config.model_config.env.env_external
+        env_config = config.model_config.env.external
         data_loader_name = config.model_config.train.data_loader_name
+        self._device = config.model_config.train.device
         if data_loader_name is 'app':  # For real-world application experiments.
             try:
                 data_path = app_config.data_path
@@ -102,7 +103,8 @@ class Data(BaseData):
         self._data = ReplayBuffer(
             state_dim,
             action_dim,
-            self._buffer_size
+            self._buffer_size,
+            self._device,
         )
         self._data.add_transitions(s1, a1, s2, a2, reward, cost, done)
 
@@ -114,11 +116,11 @@ class Data(BaseData):
 
     def _d4rl_data_loader(self) -> D4rlDataLoader:
         state_normalize = self._env_cfg.state_normalize
-        scale_rewards = self._env_cfg.scale_rewards
+        reward_normalize = self._env_cfg.reward_normalize
         return D4rlDataLoader(
             self._data_path,
             state_normalize,
-            scale_rewards,
+            reward_normalize,
         )
 
     @property

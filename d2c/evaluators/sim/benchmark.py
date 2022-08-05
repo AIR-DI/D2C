@@ -66,7 +66,7 @@ class BMEval(BaseEval):
                 observation, reward, done, _ = self._env.step(action)
                 total_rewards += reward
             results.append(total_rewards)
-            print(f'Complete the episode {i}!')
+        logging.info('='*20+f' Complete evaluation of {self._n_episodes} episodes! '+'='*20)
         results = np.array(results)
         return float(np.mean(results)), float(np.std(results)), results
 

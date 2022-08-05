@@ -72,7 +72,8 @@ class TD3BCAgent(BaseAgent):
         r = batch['reward']
         dsc = batch['dsc']
         with torch.no_grad():
-            noise = (torch.randn_like(a1) * self._policy_noise).clamp(-self._noise_clip, self._noise_clip)
+            noise = (torch.randn_like(a1, device=self._device) * self._policy_noise).clamp(-self._noise_clip,
+                                                                                           self._noise_clip)
             a2_p = (self._p_target_fn(s2) + noise).clamp(self._a_min, self._a_max)
             q2_targets = []
             for _, q_target_fn in self._q_fns:
@@ -180,19 +181,19 @@ class TD3BCAgent(BaseAgent):
 class AgentModule(BaseAgentModule):
 
     def _build_modules(self) -> None:
-        device = self._modules.device
+        device = self._net_modules.device
         self._q_nets = nn.ModuleList()
-        n_q_fns = self._modules.n_q_fns
+        n_q_fns = self._net_modules.n_q_fns
         for _ in range(n_q_fns):
             self._q_nets.append(
                 nn.ModuleList(
-                    [self._modules.q_net_factory().to(device),
-                     self._modules.q_net_factory().to(device)]
+                    [self._net_modules.q_net_factory().to(device),
+                     self._net_modules.q_net_factory().to(device)]
                 )  # source and target
             )
         self._p_nets = nn.ModuleList(
-            [self._modules.p_net_factory().to(device),
-             self._modules.p_net_factory().to(device)]
+            [self._net_modules.p_net_factory().to(device),
+             self._net_modules.p_net_factory().to(device)]
         )  # source and target
 
     @property

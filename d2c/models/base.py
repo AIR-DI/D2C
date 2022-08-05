@@ -148,7 +148,7 @@ class BaseAgent(ABC):
         info = self._train_info
         step = self._global_step
         logger.write_summary_tensorboard(summary_writer, step, info)
-        logger.write_summary_wandb(info)
+        # logger.write_summary_wandb(info)
 
     @abstractmethod
     def _build_test_policies(self):
@@ -196,7 +196,7 @@ class BaseAgent(ABC):
         pass
 
 
-class BaseAgentModule(ABC, nn.Module):
+class BaseAgentModule(nn.Module, ABC):
     """The base class for AgentModule of any agent.
 
     Build the models for the Agent according to the input network factories.
@@ -214,7 +214,7 @@ class BaseAgentModule(ABC, nn.Module):
             modules: Union[utils.Flags, Any],
     ) -> None:
         super(BaseAgentModule, self).__init__()
-        self._modules = modules
+        self._net_modules = modules
         self._build_modules()
 
     @abstractmethod

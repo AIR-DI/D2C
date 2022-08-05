@@ -121,6 +121,8 @@ class LeaEnv(BaseEnv):
             the warm-up input for LSTM dynamics model.
         :return: the initial observation.
         """
+        if options is None:
+            options = {}
         super(LeaEnv, self).reset(seed=seed)
         init_s = options.get('init_s')
         warm_input = options.get('warm_input')

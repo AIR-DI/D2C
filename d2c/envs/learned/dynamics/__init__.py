@@ -6,7 +6,7 @@ from d2c.utils.utils import Flags
 
 
 DYNA_MODULES_DICT = {
-    'dnn': MlpDyna,
+    'mlp': MlpDyna,
 }
 
 

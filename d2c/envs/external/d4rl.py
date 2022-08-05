@@ -20,11 +20,11 @@ class D4rlEnv(BaseEnv):
             obs_shift: np.ndarray = None,
             obs_scale: np.ndarray = None,
     ) -> None:
-        super(D4rlEnv, self).__init__()
         self._env_name = env_name
         self._obs_shift = obs_shift
         self._obs_scale = obs_scale
         self._load_model()
+        super(D4rlEnv, self).__init__()
 
     def _load_model(self):
         gym_env = gym.make(self._env_name)

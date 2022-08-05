@@ -80,25 +80,25 @@ def make_agent(
 
     agent = get_agent(model_name)(**agent_args)
     if restore_agent:
-        agent = restore(agent, model_cfg)
+        agent.restore(model_cfg.train.agent_ckpt_dir)
     return agent
 
 
-def restore(
-        agent: BaseAgent,
-        model_config: Union[Dict, Any]
-) -> BaseAgent:
-    """Restore an agent from the saved model file.
-
-    :param Agent agent: an initialized agent object.
-    :param model_config: the config for the model.
-    :return: An agent that has been restored.
-    """
-    model_ckpt_dir = [model_config.train.behavior_ckpt_dir,
-                      model_config.train.q_ckpt_dir,
-                      model_config.train.vae_s_ckpt_dir,
-                      model_config.train.agent_ckpt_dir,
-                      ]
-    ckpt_dir_dict = {x: y for x, y in zip(['b', 'q', 'vae_s', 'agent'], model_ckpt_dir)}
-    agent.restore_all(**ckpt_dir_dict)
-    return agent
+# def restore(
+#         agent: BaseAgent,
+#         model_config: Union[Dict, Any]
+# ) -> BaseAgent:
+#     """Restore an agent from the saved model file.
+#
+#     :param Agent agent: an initialized agent object.
+#     :param model_config: the config for the model.
+#     :return: An agent that has been restored.
+#     """
+#     model_ckpt_dir = [model_config.train.behavior_ckpt_dir,
+#                       model_config.train.q_ckpt_dir,
+#                       model_config.train.vae_s_ckpt_dir,
+#                       model_config.train.agent_ckpt_dir,
+#                       ]
+#     ckpt_dir_dict = {x: y for x, y in zip(['b', 'q', 'vae_s', 'agent'], model_ckpt_dir)}
+#     agent.restore_all(**ckpt_dir_dict)
+#     return agent

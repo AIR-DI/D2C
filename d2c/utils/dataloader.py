@@ -60,17 +60,17 @@ class BaseBMLoader(BaseDataLoader):
     * :meth:`get_transitions`: process the transitions from the dataset and return a namedtuple.
 
     :param str file_path: the path of the benchmark dataset;
-    :param bool normalize_states: if normalize the states;
-    :param bool scale_rewards: if normalize the rewards.
+    :param bool state_normalize: if normalize the states;
+    :param bool reward_normalize: if normalize the rewards.
     """
     def __init__(
             self,
             file_path: str,
-            normalize_states: bool = False,
-            scale_rewards: bool = False) -> None:
+            state_normalize: bool = False,
+            reward_normalize: bool = False) -> None:
         self._file_path = file_path
-        self._normalize_states = normalize_states
-        self._scale_rewards = scale_rewards
+        self._state_normalize = state_normalize
+        self._reward_normalize = reward_normalize
         self._obs_shift, self._obs_scale = None, None
 
     def _load_data(self):
@@ -82,10 +82,10 @@ class BaseBMLoader(BaseDataLoader):
         :return: A namedtuple that contains the elements of the transitions.
         """
         demo_s1, demo_a1, demo_s2, demo_a2, demo_r, demo_c, demo_d = self._load_data()
-        if self._normalize_states:
+        if self._state_normalize:
             demo_s1, demo_s2, self._obs_shift, self._obs_scale = self._norm_state(demo_s1, demo_s2)
-        if self._scale_rewards:
-            demo_r = self._scale_r(demo_r)
+        if self._reward_normalize:
+            demo_r = self._norm_reward(demo_r)
         transitions = OrderedDict(
             s1=demo_s1,
             a1=demo_a1,
@@ -113,7 +113,7 @@ class BaseBMLoader(BaseDataLoader):
         return s1, s2, shift, scale
 
     @staticmethod
-    def _scale_r(r: np.ndarray) -> np.ndarray:
+    def _norm_reward(r: np.ndarray) -> np.ndarray:
         """Normalize the reward.
 
         :param  np.ndarray r: reward;
@@ -147,12 +147,12 @@ class D4rlDataLoader(BaseBMLoader):
     def __init__(
             self,
             file_path: str,
-            normalize_states: bool = False,
-            scale_rewards: bool = False) -> None:
+            state_normalize: bool = False,
+            reward_normalize: bool = False) -> None:
         super(D4rlDataLoader, self).__init__(
             file_path,
-            normalize_states,
-            scale_rewards)
+            state_normalize,
+            reward_normalize)
 
     def _load_data(self):
         dataset_file = h5py.File(self._file_path + '.hdf5', 'r')
