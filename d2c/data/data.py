@@ -43,6 +43,7 @@ class BaseData(ABC):
     @property
     def data(self) -> ReplayBuffer:
         """Return the replay buffer."""
+        logging.info('='*20 + f'Get a data of size {self._data.size}' + '='*20)
         return self._data
 
 

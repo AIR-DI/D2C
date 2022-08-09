@@ -231,7 +231,7 @@ class ConfigBuilder:
             self._env_ext.data_source,
             self._env_ext.env_name,
             self._env_ext.data_name,
-            str(self._env_ext.num_transitions)+'_'+str(self._env_ext.state_normalize),
+            's_norm_'+str(self._env_ext.state_normalize),
         )
         model_name = self._model_cfg.model.model_name
 

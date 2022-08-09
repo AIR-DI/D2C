@@ -16,8 +16,8 @@
     td3_bc: {
       train_schedule: ['agent'],
       hyper_params: {
-        model_params: {q: [[400, 400], 2], p: [[300, 300],]},
-        optimizers: {q: ['adam', 1e-3], p: ['adam', 1e-5]}
+        model_params: {q: [[256, 256], 2], p: [[256, 256],]},
+        optimizers: {q: ['adam', 3e-4], p: ['adam', 3e-4]}
       }
     }
   },
@@ -26,7 +26,7 @@
       action_dim: null, action_min: null, action_max: null},
     // Parameters for Env which is provided externally
     external: {benchmark_name: 'd4rl', data_source: 'mujoco', env_name: 'Hopper-v2', data_name: 'hopper_random-v1',
-    data_file_path: null, state_normalize: false, reward_normalize: true, num_transitions: -1,
+    data_file_path: null, state_normalize: false, reward_normalize: false, num_transitions: -1,
     score_normalize: false, score_norm_min: null, score_norm_max: null},
     learned: {
       // 'mlp', 'prob', 'rnn', 'adm'
@@ -46,7 +46,7 @@
     train_test_ratio: 0.99,
     batch_size: 64,
     model_buffer_size: 1000000,
-    weight_decays: 1e-5,
+    weight_decays: 0.0,
     update_freq: 1,
     update_rate: 0.005,
     discount: 0.99,

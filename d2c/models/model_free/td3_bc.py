@@ -4,6 +4,7 @@ Paper: https://arxiv.org/pdf/2106.06860.pdf
 """
 import collections
 import torch
+import torch.nn.functional as F
 from torch import nn, Tensor
 from typing import Union, Tuple, Any, Sequence, Dict, Iterator
 from d2c.models.base import BaseAgent, BaseAgentModule
@@ -81,19 +82,24 @@ class TD3BCAgent(BaseAgent):
                 q2_targets.append(q2_targets_)
             q2_target = torch.min(*q2_targets)
             q1_target = r + dsc * self._discount * q2_target
-        q_losses = []
-        for q_fn, _ in self._q_fns:
-            q1_pred_ = q_fn(s1, a1)
-            q_loss_ = nn.MSELoss()(q1_pred_, q1_target)
-            q_losses.append(q_loss_)
-        q_loss = torch.add(*q_losses)
+        # q_losses = []
+        # for q_fn, _ in self._q_fns:
+        #     q1_pred_ = q_fn(s1, a1)
+        #     # q_loss_ = nn.MSELoss()(q1_pred_, q1_target)
+        #     q_loss_ = F.mse_loss(q1_pred_, q1_target)
+        #     q_losses.append(q_loss_)
+        # q_loss = torch.add(*q_losses)
+        q1_pred1 = self._q_fns[0][0](s1, a1)
+        q1_pred2 = self._q_fns[1][0](s1, a1)
+        q_loss = F.mse_loss(q1_pred1, q1_target) + F.mse_loss(q1_pred2, q1_target)
 
         info = collections.OrderedDict()
         info['q_loss'] = q_loss
         info['r_mean'] = torch.mean(r)
         info['dsc_mean'] = torch.mean(dsc)
-        info['q2_target_mean'] = torch.mean(q2_target)
-        info['q1_target_mean'] = torch.mean(q1_target)
+        info['q1_mean'] = q1_pred1.detach().mean()
+        info['q2_mean'] = q1_pred2.detach().mean()
+        info['q_target_mean'] = torch.mean(q1_target)
         return q_loss, info
 
     def _build_p_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
@@ -102,12 +108,15 @@ class TD3BCAgent(BaseAgent):
         a_p = self._p_fn(s)
         q_pred = self._q_fns[0][0](s, a_p)
         lmbda = self._alpha / q_pred.abs().mean().detach()
-        bc_loss = nn.MSELoss()(a_p, a)
+        # bc_loss = nn.MSELoss()(a_p, a)
+        bc_loss = F.mse_loss(a_p, a)
         p_loss = -lmbda * q_pred.mean() + bc_loss
         # info
         info = collections.OrderedDict()
         info['p_loss'] = p_loss
         info['bc_loss'] = bc_loss
+        info['lambda'] = lmbda
+        info['Q_in_p_loss'] = q_pred.detach().mean()
         return p_loss, info
 
     def _optimize_q(self, batch: Dict) -> Dict:
@@ -205,16 +214,16 @@ class AgentModule(BaseAgentModule):
         """The parameters of all the source Q networks."""
         vars_ = []
         for q_net, _ in self._q_nets:
-            vars_.append(q_net.parameters())
-        return utils.chain_gene(*vars_)
+            vars_ += list(q_net.parameters())
+        return vars_
 
     @property
     def q_target_variables(self) -> Iterator:
         """The parameters of all the target Q networks."""
         vars_ = []
         for _, q_net in self._q_nets:
-            vars_.append(q_net.parameters())
-        return utils.chain_gene(*vars_)
+            vars_ += list(q_net.parameters())
+        return vars_
 
     @property
     def p_current_net(self) -> nn.Module:

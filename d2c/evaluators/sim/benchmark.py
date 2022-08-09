@@ -74,19 +74,32 @@ class BMEval(BaseEval):
         results_episode_return = []
         results_std = []
         complete_results = []
+        norm_results_episode_return = []
+        norm_results_std = []
+        norm_complete_results = []
         infos = collections.OrderedDict()
         for name, policy in self._policies.items():
+            infos[name] = collections.OrderedDict()
             mean, std, comp_result = self._eval_policy_episodes(policy)
             if self._score_norm:
-                mean = 100 * (mean - self._score_norm_min) / (self._score_norm_max - self._score_norm_min)
-                comp_result = 100 * (comp_result - self._score_norm_min) / (self._score_norm_max - self._score_norm_min)
-                std = float(np.std(comp_result))
+                norm_mean = 100 * (mean - self._score_norm_min) / (self._score_norm_max - self._score_norm_min)
+                norm_comp_result = 100 * (comp_result - self._score_norm_min) / (self._score_norm_max - self._score_norm_min)
+                norm_std = float(np.std(norm_comp_result))
+                norm_results_episode_return.append(norm_mean)
+                norm_results_std.append(norm_std)
+                norm_complete_results.append(norm_comp_result)
+                infos[name]['episode_mean_norm'] = norm_mean
             results_episode_return.append(mean)
             results_std.append(std)
             complete_results.append(comp_result)
-            infos[name] = collections.OrderedDict()
+            # infos[name] = collections.OrderedDict()
             infos[name]['episode_mean'] = mean
-        results = [results_episode_return] + [results_std] + [complete_results]
+        results = [results_episode_return] \
+                  + [results_std] \
+                  + [complete_results] \
+                  + [norm_results_episode_return] \
+                  + [norm_results_std] \
+                  + [norm_complete_results]
         return results, infos
 
     def eval(self, step: int) -> None:
