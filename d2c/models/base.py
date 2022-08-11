@@ -126,11 +126,11 @@ class BaseAgent(ABC):
 
     def _update_target_fns(
             self,
-            source_vars: Union[Sequence[Tensor], Iterator],
-            target_vars: Union[Sequence[Tensor], Iterator]
+            source_module: nn.Module,
+            target_module: nn.Module,
     ) -> None:
         tau = self._update_rate
-        for tar, sou in zip(target_vars, source_vars):
+        for tar, sou in zip(target_module.parameters(), source_module.parameters()):
             tar.data.copy_(sou.data * tau + tar.data * (1.0 - tau))
 
     def print_train_info(self) -> None:

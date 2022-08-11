@@ -107,7 +107,15 @@ class Data(BaseData):
             self._buffer_size,
             self._device,
         )
-        self._data.add_transitions(s1, a1, s2, a2, reward, cost, done)
+        self._data.add_transitions(
+            state=s1,
+            action=a1,
+            next_state=s2,
+            next_action=a2,
+            reward=reward,
+            done=done,
+            cost=cost,
+        )
 
     def _build_data_loader(self) -> None:
         self._data_loader = self._data_loader_list[self._data_loader_name]()

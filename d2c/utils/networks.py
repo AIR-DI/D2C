@@ -2,7 +2,8 @@
 
 import torch
 import numpy as np
-from gym.spaces import Box
+import torch.nn.functional as F
+from gym.spaces import Box, Space
 from torch import nn, Tensor
 from typing import Tuple, List, Union, Type, Optional, Sequence
 from torch.distributions import Normal, TransformedDistribution, Distribution
@@ -56,8 +57,8 @@ class ActorNetwork(nn.Module):
 
     def __init__(
             self,
-            observation_space: Box,
-            action_space: Box,
+            observation_space: Union[Box, Space],
+            action_space: Union[Box, Space],
             fc_layer_params: Sequence[int] = (),
             device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
@@ -140,8 +141,8 @@ class ActorNetworkDet(nn.Module):
 
     def __init__(
             self,
-            observation_space: Box,
-            action_space: Box,
+            observation_space: Union[Box, Space],
+            action_space: Union[Box, Space],
             fc_layer_params: Sequence[int] = (),
             device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
@@ -183,8 +184,8 @@ class CriticNetwork(nn.Module):
 
     def __init__(
             self,
-            observation_space: Box,
-            action_space: Box,
+            observation_space: Union[Box, Space],
+            action_space: Union[Box, Space],
             fc_layer_params: Sequence[int] = (),
             device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
@@ -239,9 +240,3 @@ class MLP(nn.Module):
     def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
         inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
         return self._model(inputs)
-
-
-
-
-
-

@@ -49,6 +49,7 @@ class ReplayBuffer:
 
     def add(
             self,
+            *,
             state: Union[np.ndarray, torch.Tensor],
             action: Union[np.ndarray, torch.Tensor],
             next_state: Union[np.ndarray, torch.Tensor],
@@ -80,7 +81,7 @@ class ReplayBuffer:
             reward=reward,
             cost=cost,
             done=done,
-            dsc=1-done,
+            dsc=1.-done,
         )
         if isinstance(state, np.ndarray):
             for k, v in transition.items():
@@ -98,16 +99,17 @@ class ReplayBuffer:
         """
         ind = torch.randint(0, self._size, size=(batch_size,), device=self._device)
 
-        return OrderedDict((k, v[ind]) for k, v in self._data.items())
+        return OrderedDict((k, torch.clone(v[ind])) for k, v in self._data.items())
 
     def get_batch_indices(self, indices: np.ndarray) -> OrderedDict:
         """Get the batch of data according to the given indices."""
         assert np.max(indices) < self._size, 'There is an index exceeding the size of the buffer.'
         indices = torch.as_tensor(indices, dtype=torch.long, device=self._device)
-        return OrderedDict((k, v[indices]) for k, v in self._data.items())
+        return OrderedDict((k, torch.clone(v[indices])) for k, v in self._data.items())
 
     def add_transitions(
             self,
+            *,
             state: Union[np.ndarray, torch.Tensor],
             action: Union[np.ndarray, torch.Tensor],
             next_state: Union[np.ndarray, torch.Tensor],
@@ -137,7 +139,7 @@ class ReplayBuffer:
             reward=reward,
             cost=cost,
             done=done,
-            dsc=1-done,
+            dsc=1.-done,
         )
         for k, v in transitions.items():
             transitions[k] = torch.as_tensor(v, dtype=torch.float32, device=self._device)
