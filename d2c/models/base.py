@@ -29,9 +29,16 @@ class BaseAgent(ABC):
         that construct an agent;
     * ``test_policies()``: return the trained policy of this agent
 
-    :param BaseEnv env: the environment learned that contains the dynamics model.
-    :param Dict model_params: the parameters for construct the models.
-    :param Dict optimizers: the parameters for create the optimizers.
+    :param BaseEnv env: the environment learned that contains the dynamics model. It provides the information of the \
+        environment, like observation information and action information. It can also provide the trained dynamics \
+        models for the model-based RL algorithms.
+    :param Dict model_params: the parameters for constructing all the models of the algorithm. It can be a dict like \
+        ``{q: [[256, 256], 2], p: [[256, 256],]}`` that contains the parameters of the Q net and the actor(policy) \
+        net. ``[256, 256]`` means a two-layer FC network with 256 units in each layer and the number ``2`` means the \
+        number of the Q nets.
+    :param Dict optimizers: the parameters for create the optimizers. It can be a dict like \
+        ``{q: ['adam', 3e-4], p: ['adam', 3e-4]}``. It contains the type of the optimizer and the learning rate for \
+        every network model.
     :param ReplayBuffer train_data: the dataset of the batch data.
     :param int batch_size: the size of data batch for training.
     :param float weight_decays: L2 regularization coefficient of the networks.
@@ -39,7 +46,7 @@ class BaseAgent(ABC):
     :param float update_rate: the rate of update the parameters of the target network.
     :param float discount: the discount factor for computing the cumulative reward.
     :param ReplayBuffer empty_dataset: a replay buffer for storing the generated virtual
-        data by the simulator.
+        data by the simulator. It should be empty and the training beginning.
     :param device: which device to create this model on. Default to None.
     """
 
