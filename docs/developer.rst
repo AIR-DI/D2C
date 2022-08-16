@@ -119,3 +119,4 @@ Develop workflow
 When collaborating to develop the algorthm using Git, you may refer to the develop workflow as below:
 
 .. image:: ./images/develop_workflow.png
+    :width: 200px
