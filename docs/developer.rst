@@ -4,7 +4,7 @@ Developer Guide
 Add RL Algorithm
 ------------------
 
-The working directory of the RL algorthm module is ``d2c/models``. There are several subfolders to classify the RL algorithms. All the algorithms are inherited from the base class :class:`~d2c.models.base.BaseAgent`. The relationship between the ``BaseAgent`` and the different classes RL algorithm is shown in figure below:
+The working directory of the RL algorthm module is ``d2c/models``. There are several subfolders to classify the RL algorithms. All the algorithms are inherited from the base class :class:`~d2c.models.base.BaseAgent`. The relationship between the ``BaseAgent`` and the different classes RL algorithms is shown in figure below:
 
 .. figure:: ./images/algorithms.png
 
@@ -64,11 +64,11 @@ Inherit the base class :class:`~d2c.models.base.BaseAgent` and follow the follow
 
 3. Implement the method ``__init__``. Determine the specific parameters of the algorithm and class attributes.
 
-4. Implement the method ``_get_modules``. The attribute ``_model_params`` can refer to ``model.td3_bc.hyper_params.model_params`` in file ``example/benchmark/config/model_config.json``. Then you can define the network factories.
+4. Implement the method ``_get_modules``. The attribute ``_model_params`` can refer to ``model.td3_bc.hyper_params.model_params`` in file ``example/benchmark/config/model_config.json5``. Then you can define the network factories.
 
 5. Implement the class ``AgentModule`` by inheriting the class :class:`~d2c.models.base.BaseAgentModule`. In this class, you can build all the network models needed in the algorithm.
 
-6. Implement the methods ``_build_fns``, ``_build_optimizers``. In ``_build_optimizers``, the attribute ``_optimizers`` can refer to ``model.td3_bc.hyper_params.optimizers`` in file ``example/benchmark/config/model_config.json``.
+6. Implement the methods ``_build_fns``, ``_build_optimizers``. In ``_build_optimizers``, the attribute ``_optimizers`` can refer to ``model.td3_bc.hyper_params.optimizers`` in file ``example/benchmark/config/model_config.json5``.
 
 7. Implement the methods ``_build_xxx_loss``, ``_optimize_xxx``, ``_optimize_step`` according to the algorithm for optimizing the network models in the algorithm.
 
@@ -78,7 +78,7 @@ Configurate your algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 1. Complete module :module:`~d2c.models.__init__`. Import the new algorithm module here and update the dict ``AGENT_MODULES_DICT`` to add the new module. The key of the dict is the name of the algorthm.
 
-2. Complete the configuration file ``example/benchmark/config/model_config.json``. Add the model parameters dict in ``model``. Refer to ``model.td3_bc``.
+2. Complete the configuration file ``example/benchmark/config/model_config.json5``. Add the model parameters dict in ``model``. Refer to ``model.td3_bc``.
 
 Test your algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -87,17 +87,17 @@ Unittest
 .............
 - Add the unittest of the new algorithm in folder ``test/models/xxx``. Refer to ``test/models/model_free/test_td3_bc.py``.
 
-- If you add some other new modules, classes or functions(like the new network class or policy class), please add their unittests in the property folder.
+- If you add some other new modules, classes or functions(like the new network class or policy class), please add their unittests in the property folders.
 
 Test on benchmark
 ...............
-After the unittest, you should test new algorithm on the benchmark to verify its performance.
+After the unittest, you should test the new algorithm on the benchmark to verify its performance.
 
 - Add a demo file ``demo_xxx.py`` in folder ``example/benchmark`` referring to ``example/benchmark/demo_td3_bc.py``.
 
 - You can also add a shell script to run the experiments. Refer to ``example/benchmark/run.sh``.
 
-- Please save the training information and the evaluation results on the benchmark.
+- Please save the training information and the evaluation results.
 
 Considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
