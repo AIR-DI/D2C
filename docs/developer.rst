@@ -4,7 +4,9 @@ Developer Guide
 Add RL Algorithm
 ------------------
 
-The working directory of the RL algorthm module is ``d2c/models``. There are several subfolders to classify the RL algorithms. All the algorithms are inherited from the base class :class:`~d2c.models.base.BaseAgent`.
+The working directory of the RL algorthm module is ``d2c/models``. There are several subfolders to classify the RL algorithms. All the algorithms are inherited from the base class :class:`~d2c.models.base.BaseAgent`. The relationship between the ``BaseAgent`` and the different classes RL algorithm is shown in figure below:
+
+.. figure:: ./images/algorithms.png
 
 Know the ``BaseAgent``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
