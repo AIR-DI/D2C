@@ -14,3 +14,15 @@ def make_config(command_args=None):
         command_args=command_args,
     )
     return cfg_builder.build_config()
+
+
+def make_doge_config(command_args=None):
+    work_abs_dir = abs_file_path(__file__, '../')
+    model_config_path = os.path.join(work_abs_dir, 'config', 'doge_config.json5')
+    cfg_builder = ConfigBuilder(
+        app_config=app_config,
+        model_config_path=model_config_path,
+        work_abs_dir=work_abs_dir,
+        command_args=command_args,
+    )
+    return cfg_builder.build_config()
