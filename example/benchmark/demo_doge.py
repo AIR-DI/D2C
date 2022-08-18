@@ -7,7 +7,7 @@ from d2c.models import make_agent
 from d2c.envs import benchmark_env, LeaEnv
 from d2c.data import Data
 from d2c.evaluators import bm_eval
-from example.benchmark.config import make_doge_config
+from example.benchmark.config import make_config
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +26,6 @@ def main():
     command_args.update({
         'model.model_name': 'doge',
         'train.data_loader_name': None,
-        'train.N': 20,
         'train.device': device,
         'train.seed': 0,
         'train.total_train_steps': 1000000,
@@ -34,8 +33,7 @@ def main():
         'train.agent_ckpt_name': '0817'
     })
 
-    config_file_name = 'doge_config.json5'
-    config = make_doge_config(command_args, config_file_name)
+    config = make_config(command_args)
     bm_data = Data(config)
     s_norm = dict(zip(['obs_shift', 'obs_scale'], bm_data.state_shift_scale))
     data = bm_data.data

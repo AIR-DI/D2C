@@ -19,6 +19,18 @@
         model_params: {q: [[256, 256], 2], p: [[256, 256],]},
         optimizers: {q: ['adam', 3e-4], p: ['adam', 3e-4]}
       }
+    },
+    doge: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[256, 256], 2], p: [[256, 256],], distance: [[256, 256],]},
+        optimizers: {q: ['adam', 3e-4], p: ['adam', 3e-4], distance:  ['adam', 1e-3]},
+        alpha: 17.5,
+        lambda_lr: 0.0003,
+        initial_lambda: 5,
+        train_d_steps: 100000,
+        N: 30,
+      }
     }
   },
   env: {

@@ -11,16 +11,22 @@ from typing import Union, Tuple, Any, Sequence, Dict, Iterator
 from d2c.models.base import BaseAgent, BaseAgentModule
 from d2c.utils import networks, utils, policies
 
+LAMBDA_MIN = 1
+LAMBDA_MAX = 100
+
 
 class DOGEAgent(BaseAgent):
-    """Implementation of TD3+BC
+    """Implementation of DOGE
 
     :param float policy_noise: the noise used in updating policy network.
     :param int update_actor_freq: the update frequency of actor network.
     :param float noise_clip: the clipping range used in updating policy network.
     :param float alpha: the value of alpha, which controls the weight for TD3 learning
         relative to behavior cloning.
-
+    :param int N: the number of noise samples to train distance function
+    :param float initial_lambda: the vale of initial Lagrangian multiplier
+    :param float lambda_lr: the update step size of Lagrangian multiplier
+    :param float train_d_steps: the total training steps to train distance function
     .. seealso::
 
         Please refer to :class:`~d2c.models.base.BaseAgent` for more detailed
@@ -33,12 +39,20 @@ class DOGEAgent(BaseAgent):
             update_actor_freq: int = 2,
             noise_clip: float = 0.5,
             alpha: float = 2.5,
+            N: int = 20,
+            initial_lambda: float = 5,
+            lambda_lr: float = 3e-4,
+            train_d_steps: int = int(1e+5),
             **kwargs: Any,
     ) -> None:
         self._policy_noise = policy_noise
         self._update_actor_freq = update_actor_freq
         self._noise_clip = noise_clip
         self._alpha = alpha
+        self._N = N
+        self._initial_lambda = initial_lambda
+        self._train_d_steps = train_d_steps
+        self._lambda_lr = lambda_lr
         self._p_info = collections.OrderedDict()
         super(DOGEAgent, self).__init__(**kwargs)
 
@@ -48,6 +62,8 @@ class DOGEAgent(BaseAgent):
         self._q_target_fns = self._agent_module.q_target_nets
         self._p_fn = self._agent_module.p_net
         self._p_target_fn = self._agent_module.p_target_net
+        self._d_fn = self._agent_module.d_net
+        self._auto_lmbda = torch.tensor(self._initial_lambda, dtype=torch.float32, device=self._device)
 
     def _init_vars(self) -> None:
         pass
@@ -64,6 +80,34 @@ class DOGEAgent(BaseAgent):
             lr=opts.p[1],
             weight_decay=self._weight_decays,
         )
+        self._d_optimizer = utils.get_optimizer(opts.distance[0])(
+            parameters=self._d_fn.parameters(),
+            lr=opts.distance[1],
+            weight_decay=self._weight_decays,
+        )
+        self._dual_step_size = torch.tensor(self._lambda_lr)
+
+    def _build_distance_loss(self, batch: Dict) -> [Tuple[Tensor], Dict]:
+        state = batch['s1']
+        action = batch['a1']
+
+        state = state.unsqueeze(0).repeat(self._N, 1, 1)
+        state = state.view(self._batch_size * self._N, self._observation_space.shape[0])
+
+        action = action.unsqueeze(0).repeat(self._N, 1, 1)
+        action = action.view(self._batch_size * self._N, self._action_space.shape[0])
+
+        noise_action = ((torch.rand([self._batch_size * self._N, self._action_space.shape[0]]) - 0.5) * 3).to(self._device)
+        noise = noise_action - action
+        norm = torch.norm(noise, dim=1, keepdim=True)
+
+        output = self._d_fn(state, noise_action).unsqueeze(1)
+        label = norm
+        distance_loss = nn.MSELoss()(output, label)
+
+        info = collections.OrderedDict()
+        info['distance_loss'] = distance_loss
+        return distance_loss, info
 
     def _build_q_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
         s1 = batch['s1']
@@ -102,18 +146,24 @@ class DOGEAgent(BaseAgent):
         info['dsc_min'] = dsc.min()
         return q_loss, info
 
-    def _build_p_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
+    def _build_p_alpha_loss(self, batch: Dict) -> Tuple[Tensor, Tensor, Dict]:
         s = batch['s1']
         a = batch['a1']
         pi = self._p_fn(s)
         q = self._q_fns[0](s, pi)
-        lmbda = self._alpha / q.abs().mean().detach()
-        p_loss = -lmbda * q.mean() + F.mse_loss(pi, a)
+        scaler = self._alpha / q.abs().mean().detach()
+        bc_loss = F.mse_loss(pi, a)
+        distance = self._d_fn(s, pi)
+        distance_diff = (distance - self._d_fn(s, a).detach()).mean()
+        p_loss = -scaler * q.mean() + distance.mean() * self._auto_lmbda
         info = collections.OrderedDict()
-        info['lambda'] = lmbda
+        info['lambda'] = self._auto_lmbda
         info['actor_loss'] = p_loss
+        info['bc_loss'] = bc_loss
+        info['distance_diff'] = distance_diff
         info['Q_in_actor_loss'] = q.detach().mean()
-        return p_loss, info
+        info['distance_in_actor'] = distance.detach().mean()
+        return p_loss, distance_diff, info
 
     def _optimize_q(self, batch: Dict) -> Dict:
         loss, info = self._build_q_loss(batch)
@@ -122,22 +172,36 @@ class DOGEAgent(BaseAgent):
         self._q_optimizer.step()
         return info
 
-    def _optimize_p(self, batch: Dict) -> Dict:
-        loss, info = self._build_p_loss(batch)
+    def _optimize_p_alpha(self, batch: Dict) -> Dict:
+        p_loss, distance_diff, info = self._build_p_alpha_loss(batch)
         self._p_optimizer.zero_grad()
-        loss.backward()
+        p_loss.backward()
         self._p_optimizer.step()
+        with torch.no_grad():
+            lambda_loss = self._auto_lmbda * distance_diff
+            self._auto_lmbda += self._lambda_lr * lambda_loss
+            self._auto_lmbda = torch.clip(self._auto_lmbda, LAMBDA_MIN, LAMBDA_MAX)
+        return info
+
+    def _optimize_distance(self, batch: Dict):
+        distance_loss, info = self._build_distance_loss(batch)
+        self._d_optimizer.zero_grad()
+        distance_loss.backward()
+        self._d_optimizer.step()
         return info
 
     def _optimize_step(self, batch: Dict) -> Dict:
         info = collections.OrderedDict()
         q_info = self._optimize_q(batch)
+        if self._global_step <= self._train_d_steps:
+            distance_info = self._optimize_distance(batch)
         if self._global_step % self._update_actor_freq == 0:
-            self._p_info = self._optimize_p(batch)
+            self._p_info = self._optimize_p_alpha(batch)
             # Update the target networks.
             self._update_target_fns(self._q_fns, self._q_target_fns)
             self._update_target_fns(self._p_fn, self._p_target_fn)
         info.update(q_info)
+        info.update(distance_info)
         info.update(self._p_info)
         return info
 
@@ -157,6 +221,7 @@ class DOGEAgent(BaseAgent):
     def _get_modules(self) -> utils.Flags:
         model_params_q, n_q_fns = self._model_params.q
         model_params_p = self._model_params.p[0]
+        model_params_d = self._model_params.distance[0]
 
         def q_net_factory():
             return networks.CriticNetwork(
@@ -174,9 +239,18 @@ class DOGEAgent(BaseAgent):
                 device=self._device,
             )
 
+        def d_net_factory():
+            return networks.CriticNetwork(
+                observation_space=self._observation_space,
+                action_space=self._action_space,
+                fc_layer_params=model_params_d,
+                device=self._device,
+            )
+
         modules = utils.Flags(
             q_net_factory=q_net_factory,
             p_net_factory=p_net_factory,
+            d_net_factory=d_net_factory,
             n_q_fns=n_q_fns,
             device=self._device,
         )
@@ -194,6 +268,7 @@ class AgentModule(BaseAgentModule):
         self._q_target_nets = copy.deepcopy(self._q_nets)
         self._p_net = self._net_modules.p_net_factory().to(device)
         self._p_target_net = copy.deepcopy(self._p_net)
+        self._d_net = self._net_modules.d_net_factory().to(device)
 
     @property
     def q_nets(self) -> nn.ModuleList:
@@ -210,6 +285,10 @@ class AgentModule(BaseAgentModule):
     @property
     def p_target_net(self) -> nn.Module:
         return self._p_target_net
+
+    @property
+    def d_net(self) -> nn.Module:
+        return self._d_net
 
 
 
