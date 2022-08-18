@@ -195,13 +195,13 @@ class DOGEAgent(BaseAgent):
         q_info = self._optimize_q(batch)
         if self._global_step <= self._train_d_steps:
             distance_info = self._optimize_distance(batch)
+            info.update(distance_info)
         if self._global_step % self._update_actor_freq == 0:
             self._p_info = self._optimize_p_alpha(batch)
             # Update the target networks.
             self._update_target_fns(self._q_fns, self._q_target_fns)
             self._update_target_fns(self._p_fn, self._p_target_fn)
         info.update(q_info)
-        info.update(distance_info)
         info.update(self._p_info)
         return info
 
