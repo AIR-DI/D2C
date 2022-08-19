@@ -155,7 +155,7 @@ class DOGEAgent(BaseAgent):
         bc_loss = F.mse_loss(pi, a)
         distance = self._d_fn(s, pi)
         distance_diff = (distance - self._d_fn(s, a).detach()).mean()
-        p_loss = -scaler * q.mean() + distance.mean() * self._auto_lmbda
+        p_loss = -scaler * q.mean() + distance_diff.mean() * self._auto_lmbda.detach()
         info = collections.OrderedDict()
         info['lambda'] = self._auto_lmbda
         info['actor_loss'] = p_loss
@@ -214,6 +214,7 @@ class DOGEAgent(BaseAgent):
     def save(self, ckpt_name: str) -> None:
         torch.save(self._agent_module.state_dict(), ckpt_name + '.pth')
         torch.save(self._agent_module.p_net.state_dict(), ckpt_name + '_policy.pth')
+        torch.save(self._agent_module.d_net.state_dict(), ckpt_name + '_distance.pth')
 
     def restore(self, ckpt_name: str) -> None:
         self._agent_module.load_state_dict(torch.load(ckpt_name + '.pth'))

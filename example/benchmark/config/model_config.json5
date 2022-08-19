@@ -29,7 +29,7 @@
         lambda_lr: 0.0003,
         initial_lambda: 5,
         train_d_steps: 100000,
-        N: 30,
+        N: 20,
       }
     }
   },
