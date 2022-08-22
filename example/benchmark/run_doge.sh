@@ -31,7 +31,7 @@ else
 fi
 
 for SEED in 20 30 40; do
-GPU_DEVICE=0
+GPU_DEVICE=3
 CUDA_VISIBLE_DEVICES=$GPU_DEVICE python demo.py \
   --train.agent_ckpt_name='220818' \
   --model.model_name='doge' \

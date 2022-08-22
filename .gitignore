@@ -11,3 +11,4 @@ __pycache__
 /test/evaluators/sim/temp/*
 /test/models/model_free/temp/*
 /test/trainers/temp/*
+example/benchmark/nohup.out

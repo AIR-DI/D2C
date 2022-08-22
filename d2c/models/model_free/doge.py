@@ -87,7 +87,7 @@ class DOGEAgent(BaseAgent):
         )
         self._dual_step_size = torch.tensor(self._lambda_lr)
 
-    def _build_distance_loss(self, batch: Dict) -> [Tuple[Tensor], Dict]:
+    def _build_distance_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
         state = batch['s1']
         action = batch['a1']
 
@@ -155,7 +155,13 @@ class DOGEAgent(BaseAgent):
         bc_loss = F.mse_loss(pi, a)
         distance = self._d_fn(s, pi)
         distance_diff = (distance - self._d_fn(s, a).detach()).mean()
-        p_loss = -scaler * q.mean() + distance_diff.mean() * self._auto_lmbda.detach()
+
+        with torch.no_grad():
+            lambda_loss = self._auto_lmbda * distance_diff
+            self._auto_lmbda += self._lambda_lr * lambda_loss.cpu().item()
+            self._auto_lmbda = torch.clip(self._auto_lmbda, LAMBDA_MIN, LAMBDA_MAX)
+
+        p_loss = -scaler * q.mean() + distance_diff * self._auto_lmbda.detach()
         info = collections.OrderedDict()
         info['lambda'] = self._auto_lmbda
         info['actor_loss'] = p_loss
@@ -177,10 +183,6 @@ class DOGEAgent(BaseAgent):
         self._p_optimizer.zero_grad()
         p_loss.backward()
         self._p_optimizer.step()
-        with torch.no_grad():
-            lambda_loss = self._auto_lmbda * distance_diff
-            self._auto_lmbda += self._lambda_lr * lambda_loss
-            self._auto_lmbda = torch.clip(self._auto_lmbda, LAMBDA_MIN, LAMBDA_MAX)
         return info
 
     def _optimize_distance(self, batch: Dict):

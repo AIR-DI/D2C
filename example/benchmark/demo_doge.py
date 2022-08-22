@@ -18,8 +18,8 @@ def main():
     command_args = {
         prefix + 'benchmark_name': 'd4rl',
         prefix + 'data_source': 'mujoco',
-        prefix + 'env_name': 'Hopper-v2',
-        prefix + 'data_name': 'hopper_medium-v2',
+        prefix + 'env_name': 'HalfCheetah-v2',
+        prefix + 'data_name': 'halfcheetah_medium_expert-v2',
         prefix + 'state_normalize': True,
         prefix + 'score_normalize': True,
     }
