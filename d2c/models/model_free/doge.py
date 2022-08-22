@@ -85,7 +85,7 @@ class DOGEAgent(BaseAgent):
             lr=opts.distance[1],
             weight_decay=self._weight_decays,
         )
-        # self._dual_step_size = torch.tensor(self._lambda_lr)
+        self._dual_step_size = torch.tensor(self._lambda_lr)
 
     def _build_distance_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
         state = batch['s1']
