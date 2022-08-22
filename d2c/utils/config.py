@@ -264,8 +264,9 @@ class ConfigBuilder:
         if not self._model_cfg.train.get('agent_ckpt_dir'):
             agent_ckpt_dir = os.path.join(
                 model_dir,
+                'agent',
                 str(self._model_cfg.train.agent_ckpt_name),
-                str(self._model_cfg.train.seed),
+                'seed'+str(self._model_cfg.train.seed),
                 'agent',
             )
             self._model_cfg.train.update(agent_ckpt_dir=agent_ckpt_dir)

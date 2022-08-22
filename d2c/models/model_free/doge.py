@@ -63,10 +63,9 @@ class DOGEAgent(BaseAgent):
         self._p_fn = self._agent_module.p_net
         self._p_target_fn = self._agent_module.p_target_net
         self._d_fn = self._agent_module.d_net
-        self._auto_lmbda = torch.tensor(self._initial_lambda, dtype=torch.float32, device=self._device)
 
     def _init_vars(self) -> None:
-        pass
+        self._auto_lmbda = torch.tensor(self._initial_lambda, dtype=torch.float32, device=self._device)
 
     def _build_optimizers(self) -> None:
         opts = self._optimizers
@@ -85,7 +84,6 @@ class DOGEAgent(BaseAgent):
             lr=opts.distance[1],
             weight_decay=self._weight_decays,
         )
-        self._dual_step_size = torch.tensor(self._lambda_lr)
 
     def _build_distance_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
         state = batch['s1']
