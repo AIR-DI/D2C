@@ -1,6 +1,6 @@
-# Benchmark Result
+# Benchmark Results
 
-Each image contains the results of the experiments with 3 different seed.
+Each image contains the results of the experiments with 3 different seeds.
 
 ## Hopper
 
