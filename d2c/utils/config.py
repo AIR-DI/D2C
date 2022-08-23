@@ -218,7 +218,7 @@ class ConfigBuilder:
                           ('score_norm_max', self._env_info.norm_max),
                           ('data_file_path', data_file_path)])
         for k, v in temp_dict.items():
-            if not self._model_cfg.env.external[k]:
+            if self._model_cfg.env.external[k] is None:
                 self._model_cfg.env.external[k] = v
 
     def _update_model_dir(self) -> None:
