@@ -26,11 +26,11 @@ The system provides the algorithm base class to abstract some essential methods 
 
 - ``_build_fns``: it first uses the class :class:`~d2c.models.base.BaseAgentModule` to build all the network models of the RL algorithm.
 
-  - ``BaseAgentModule``: It is a base class in the module :module:`~d2c.models.base`. In your algorithm module, you should inherit it to build the class ``AgentModule`` of your algorithm. Its initialization parameter ``modules`` is come from the result of the above method :meth:`~d2c.models.base.BaseAgent._get_modules`. Its method :meth:`~d2s.models.base.BaseAgentModule._build_modules` builds the models of the algorithm according to the input network factories. You should implement this method in your ``AgentModule`` class.
+  - ``BaseAgentModule``: it is a base class in the module :module:`~d2c.models.base`. In your algorithm module, you should inherit it to build the class ``AgentModule`` of your algorithm. Its initialization parameter ``modules`` is come from the result of the above method :meth:`~d2c.models.base.BaseAgent._get_modules`. Its method :meth:`~d2s.models.base.BaseAgentModule._build_modules` builds the models of the algorithm according to the input network factories. You should implement this method in your ``AgentModule`` class.
 
   - We get the attribute ``_agent_module`` by instantiating the class ``AgentModule``. Then you can build some attributes as the reference of the network models in ``_agent_module`` for convenience.
 
-- ``_init_vars``: it is not necessary.
+- ``_init_vars``: Initializing some variables that will be used in training process of this algorithm.
 
 - ``_build_optimizers``: the parameters for building the optimizers are in attribute ``_optimizers``. You can use the function :func:`~d2c.utils.utils.get_optimizer` to build all the optimizers needed with the parameters.
 
@@ -97,7 +97,7 @@ After the unittest, you should test the new algorithm on the benchmark to verify
 
 - You can also add a shell script to run the experiments. Refer to ``example/benchmark/run.sh``.
 
-- Please save the training information and the evaluation results.
+- Please save the training information and the evaluation results. You can put the evaluation results in folder ``example/benchmark/results``. Refer to the results of  ``td3_bc`` in that folder.
 
 Considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
