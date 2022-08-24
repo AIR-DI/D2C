@@ -1,4 +1,5 @@
 """The base class of RL agent."""
+from collections import OrderedDict
 
 import torch
 import collections
@@ -155,7 +156,10 @@ class BaseAgent(ABC):
         info = self._train_info
         step = self._global_step
         logger.write_summary_tensorboard(summary_writer, step, info)
-        # logger.write_summary_wandb(info)
+        _info = {}
+        _info.update(global_step=step)
+        _info.update(info)
+        logger.WandbLogger.write_summary(_info)
 
     @abstractmethod
     def _build_test_policies(self):

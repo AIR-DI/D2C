@@ -3,7 +3,8 @@
 import os
 import wandb
 import numpy as np
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
+from collections import OrderedDict
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -56,5 +57,5 @@ class WandbLogger:
         self.wandb_run.finish()
 
     @staticmethod
-    def write_summary(info: Dict) -> None:
+    def write_summary(info: Union[Dict, OrderedDict]) -> None:
         wandb.log(info)

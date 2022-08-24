@@ -34,6 +34,14 @@ class TestTrainer:
         'train.print_freq': 2,
         'train.eval_freq': 5,
     })
+    wandb = {
+        'entity': 'd2c',
+        'project': 'test_project',
+        'name': 'unittest',
+        'reinit': False,
+        'mode': 'online'
+    }
+    command_args.update({'train.wandb': wandb})
     cfg_builder = ConfigBuilder(
         app_config=app_config,
         model_config_path=model_config_path,

@@ -12,6 +12,8 @@ from d2c.evaluators import BaseEval
 from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.utils import utils
 from d2c.envs.learned.dynamics import make_dynamics
+from d2c.utils.logger import WandbLogger
+from d2c.utils.config import ConfigBuilder
 
 
 class Trainer(BaseTrainer):
@@ -115,6 +117,7 @@ class Trainer(BaseTrainer):
         utils.maybe_makedirs(os.path.dirname(agent_ckpt_dir))
         train_summary_dir = agent_ckpt_dir + '_train_log'
         train_summary_writer = SummaryWriter(train_summary_dir)
+        wandb_logger = self._build_wandb_logger(dir_=train_summary_dir)
 
         time_st_total = time.time()
         step = self._agent.global_step
@@ -128,9 +131,12 @@ class Trainer(BaseTrainer):
             if step % self._eval_freq == 0 or step == self._train_steps:
                 if self._evaluator is not None:
                     try:
-                        self._evaluator.eval(step)
+                        eval_info = self._evaluator.eval(step)
                     except:
                         logging.info('Something wrong when evaluating the policy!')
+                    else:
+                        eval_info.update(global_step=step)
+                        wandb_logger.write_summary(eval_info)
                     if step == self._train_steps:
                         self._evaluator.save_eval_results()
             if step % self._save_freq == 0:
@@ -138,6 +144,7 @@ class Trainer(BaseTrainer):
                 logging.info(f'Agent saved at {agent_ckpt_dir}.')
         self._agent.save(agent_ckpt_dir)
         train_summary_writer.close()
+        wandb_logger.finish()
         time_cost = time.time() - time_st_total
         logging.info('Training finished, time cost %.4gs.', time_cost)
 
@@ -181,6 +188,19 @@ class Trainer(BaseTrainer):
                 train_fn_dict[x]()
 
         return custom_train
+
+    def _build_wandb_logger(self, dir_: Optional[str] = None, name: Optional[str] = None) -> WandbLogger:
+        _params = self._model_cfg.train.wandb
+        if dir_ is not None:
+            utils.maybe_makedirs(dir_)
+            _params.update(dir_=dir_)
+        if name is not None:
+            _params.update(name=name)
+        _config = ConfigBuilder.main_hyper_params(self._model_cfg)
+        _params.update(config=_config)
+        return WandbLogger(**_params)
+
+
 
 
 

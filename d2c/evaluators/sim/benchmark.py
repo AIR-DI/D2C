@@ -102,11 +102,12 @@ class BMEval(BaseEval):
                   + [norm_complete_results]
         return results, infos
 
-    def eval(self, step: int) -> None:
+    def eval(self, step: int) -> Dict:
         """The evaluation API methods for policies evaluation.
 
         :param int step: The step number of the agent training process.
         """
+        return_info = {}
         eval_r_result, eval_r_info = self._eval_policies()
         self._eval_r_results.append([step] + eval_r_result)
         for policy_key, policy_info in eval_r_info.items():
@@ -114,7 +115,11 @@ class BMEval(BaseEval):
                 step=None, info=policy_info, prefix=policy_key + ': '
             ))
             write_summary_tensorboard(self._eval_summary_writers[policy_key], step, policy_info)
+            prefix = policy_key + '-'
+            for k, v in policy_info.items():
+                return_info.update({prefix+k: v})
         logging.info(f'Testing at step {step}.')
+        return return_info
 
     def save_eval_results(self) -> None:
         """Save the whole evaluation results across the agent training process.

@@ -1,6 +1,7 @@
 import os
+import sys
+sys.path.append('../../')
 import pytest
-import torch
 from torch.utils.tensorboard import SummaryWriter
 from d2c.utils.logger import write_summary_tensorboard, WandbLogger
 

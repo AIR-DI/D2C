@@ -63,6 +63,8 @@
     vae_s_ckpt_name: 'vae_s',
     agent_ckpt_name: 'agent',
     seed: 1,
+    // parameters for Wandb logger
+    wandb: {entity: null, project: null, name: null, reinit: false, mode: 'online'}
   },
   eval: {
     n_eval_episodes: 20,

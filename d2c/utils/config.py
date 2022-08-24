@@ -90,7 +90,7 @@ class ConfigBuilder:
         self._model_cfg = None
         self._update_model_cfg()
 
-    def _check_command_args(self):
+    def _check_command_args(self) -> None:
         """Check the input command parameters."""
         assert isinstance(self._command_args, dict)
         for k in self._command_args.keys():
@@ -116,21 +116,26 @@ class ConfigBuilder:
         )
         return config
 
-    @property
-    def main_hyper_params(self) -> Dict:
-        """Get the main hyperparameters of this experiment."""
+    @staticmethod
+    def main_hyper_params(_model_cfg: Union[Dict, EasyDict, Any]) -> Dict:
+        """Get the main hyperparameters of this experiment.
+
+        :param dict _model_cfg: the model_config.
+        """
         _dict = {}
-        _dict.update(model_name=self._model_cfg.model.model_name)
-        model_hyper_params = self._model_cfg.model[_dict['model_name']].hyper_params
+        _dict.update(model_name=_model_cfg.model.model_name)
+        model_hyper_params = _model_cfg.model[_dict['model_name']].hyper_params
         model_hyper_params['model_params'] = str(model_hyper_params.model_params)
         model_hyper_params['optimizers'] = str(model_hyper_params.optimizers)
         _dict.update(model_hyper_params)
+
+        _dict.update(env_external=_model_cfg.env.external)
 
         train_params = ['device', 'train_test_ratio', 'batch_size',
                         'update_freq', 'update_rate', 'discount',
                         'total_train_steps', 'seed']
         for k in train_params:
-            _dict.update({k: self._model_cfg.train[k]})
+            _dict.update({k: _model_cfg.train[k]})
 
         print('='*10 + 'The main hyperparameters of this experiment' + '='*10)
         print(json5.dumps(_dict, indent=2, ensure_ascii=False))

@@ -32,6 +32,14 @@ def main():
         'train.batch_size': 256,
         'train.agent_ckpt_name': '0810'
     })
+    wandb = {
+        'entity': 'd2c',
+        'project': 'td3_bc',
+        'name': 'test',
+        'reinit': False,
+        'mode': 'online'
+    }
+    command_args.update({'train.wandb': wandb})
 
     config = make_config(command_args)
     bm_data = Data(config)

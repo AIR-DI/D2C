@@ -33,7 +33,7 @@ class TestCfg:
         assert config.model_config.env.basic_info.action_dim == 3
         assert config.model_config.env.external.score_norm_min == 0.001
         assert config.model_config.env.external.score_norm_max == 3234.3
-        _ = cfg_builder.main_hyper_params
+        _ = cfg_builder.main_hyper_params(config.model_config)
 
 
 if __name__ == '__main__':
