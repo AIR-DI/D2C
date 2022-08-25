@@ -229,16 +229,17 @@ class ConfigBuilder:
     def _update_model_dir(self) -> None:
         """Construct the models' file path"""
         model_dir = self._model_cfg.train.model_dir
+        model_name = self._model_cfg.model.model_name
         model_dir = os.path.join(
             self._work_abs_dir,
             model_dir,
             self._env_ext.benchmark_name,
             self._env_ext.data_source,
+            model_name,
             self._env_ext.env_name,
             self._env_ext.data_name,
             's_norm_'+str(self._env_ext.state_normalize),
         )
-        model_name = self._model_cfg.model.model_name
 
         if not self._model_cfg.train.get('behavior_ckpt_dir'):
             behavior_ckpt_dir = os.path.join(
@@ -269,9 +270,8 @@ class ConfigBuilder:
             agent_ckpt_dir = os.path.join(
                 model_dir,
                 'agent',
-                model_name,
                 str(self._model_cfg.train.agent_ckpt_name),
-                str(self._model_cfg.train.seed),
+                'seed'+str(self._model_cfg.train.seed),
                 'agent',
             )
             self._model_cfg.train.update(agent_ckpt_dir=agent_ckpt_dir)
