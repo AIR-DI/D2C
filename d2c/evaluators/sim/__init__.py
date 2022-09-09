@@ -1,5 +1,3 @@
-"""The API of building the evaluators with simulator."""
-
 from typing import Any, Union
 from d2c.evaluators.sim.benchmark import BMEval
 from d2c.models import BaseAgent
@@ -12,6 +10,12 @@ def bm_eval(
         env: BaseEnv,
         config: Union[Any, Flags]
 ) -> BMEval:
+    """The API of building the evaluators with simulator.
+
+    :param BaseAgent agent: The agent to be evaluated.
+    :param BaseEnv env: An env to evaluate the policy.
+    :param config: The configuration object.
+    """
     n_eval_episodes = config.model_config.eval.n_eval_episodes
     score_normalize = config.model_config.env.external.score_normalize
     score_norm_min = config.model_config.env.external.score_norm_min

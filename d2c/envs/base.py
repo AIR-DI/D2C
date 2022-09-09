@@ -19,14 +19,14 @@ class BaseEnv(gym.Env, ABC):
 
     The main API methods that users of this class need to know are:
 
-        step
-        reset
+        * :meth:`~d2c.envs.base.BaseEnv.step`
+        * :meth:`~d2c.envs.base.BaseEnv.reset`
 
     And set the following attributes:
 
-        action_space: The Space object corresponding to valid actions
-        observation_space: The Space object corresponding to valid observations
-        reward_range: A tuple corresponding to the min and max possible rewards
+        * ``action_space``: The Space object corresponding to valid actions
+        * ``observation_space``: The Space object corresponding to valid observations
+        * ``reward_range``: A tuple corresponding to the min and max possible rewards
 
     Note: a default reward range set to [-inf,+inf] already exists. Set it if you want a narrower range.
 
