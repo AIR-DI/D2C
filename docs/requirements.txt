@@ -8,3 +8,4 @@ tensorboard
 torch
 tqdm
 protobuf~=3.19.0
+Jinja2<3.1
