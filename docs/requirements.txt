@@ -1,0 +1,10 @@
+gym
+json5
+wandb
+numpy>=1.20
+sphinx<4
+sphinxcontrib-bibtex
+tensorboard
+torch
+tqdm
+protobuf~=3.19.0

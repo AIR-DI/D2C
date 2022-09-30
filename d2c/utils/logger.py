@@ -58,4 +58,7 @@ class WandbLogger:
 
     @staticmethod
     def write_summary(info: Union[Dict, OrderedDict]) -> None:
-        wandb.log(info)
+        try:
+            wandb.log(info)
+        except wandb.Error as e:
+            print(f'Wandb logging failed for the reason that: {e}!')

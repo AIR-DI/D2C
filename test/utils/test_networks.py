@@ -14,9 +14,9 @@ class TestNet:
 
     batch_size = 64
     s1 = np.random.random((batch_size, obs_space.shape[0]))
-    s2 = torch.ones((batch_size, obs_space.shape[0]))
+    s2 = torch.tensor(s1)
     a1 = np.random.random((batch_size, act_space.shape[0]))
-    a2 = torch.ones((batch_size, act_space.shape[0]))
+    a2 = torch.tensor(a1)
 
     s_dim = obs_space.shape[0]
     a_dim = act_space.shape[0]
