@@ -1,6 +1,4 @@
 """The base class of RL agent."""
-from collections import OrderedDict
-
 import torch
 import collections
 import logging
