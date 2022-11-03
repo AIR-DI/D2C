@@ -11,22 +11,8 @@ from typing import Union, Tuple, Any, Sequence, Dict, Iterator
 from d2c.models.base import BaseAgent, BaseAgentModule
 from d2c.utils import networks, utils, policies
 
-"""
-Implementation of DOGE (Distance-Sensitive Offline Reinforcement Learning)
-Paper: https://arxiv.org/abs/2205.11027.pdf
-"""
-import collections
-import torch
-import copy
-import torch.nn.functional as F
-from torch import nn, Tensor
-from typing import Union, Tuple, Any, Sequence, Dict, Iterator
-from d2c.models.base import BaseAgent, BaseAgentModule
-from d2c.utils import networks, utils, policies
-
 LAMBDA_MIN = 1
 LAMBDA_MAX = 100
-
 
 class H2OAgent(BaseAgent):
     """Implementation of H2O
