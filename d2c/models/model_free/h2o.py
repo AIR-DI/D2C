@@ -34,10 +34,9 @@ class H2OAgent(BaseAgent):
     :param float policy_noise: the noise used in updating policy network.
     :param int update_actor_freq: the update frequency of actor network.
     :param float noise_clip: the clipping range used in updating policy network.
-    :param float alpha: the value of alpha, which controls the weight for TD3 learning
-        relative to behavior cloning.
+    :param float alpha: the value of alpha, which controls the weight for TD3 learning relative to behavior cloning.
     :param int N: the number of noise samples to train distance function
-    :param float initial_lambda: the vale of initial Lagrangian multiplier
+    :param float initial_lambda: the value of initial Lagrangian multiplier
     :param float lambda_lr: the update step size of Lagrangian multiplier
     :param float train_d_steps: the total training steps to train distance function
     .. seealso::
@@ -67,7 +66,7 @@ class H2OAgent(BaseAgent):
         self._train_d_steps = train_d_steps
         self._lambda_lr = lambda_lr
         self._p_info = collections.OrderedDict()
-        super(DOGEAgent, self).__init__(**kwargs)
+        super(H2OAgent, self).__init__(**kwargs)
 
     def _build_fns(self) -> None:
         self._agent_module = AgentModule(modules=self._modules)
