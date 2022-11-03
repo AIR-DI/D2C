@@ -31,6 +31,17 @@
         train_d_steps: 100000,
         N: 20,
       }
+    },
+    h2o: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {q: [[256, 256], 2], p: [[256, 256],], },
+        optimizers: {q: ['adam', 3e-4], p: ['adam', 3e-4], },
+        alpha: 0.01,
+        lambda_lr: 0.0003,
+        train_d_steps: 100000,
+        N: 20,
+      }
     }
   },
   env: {
