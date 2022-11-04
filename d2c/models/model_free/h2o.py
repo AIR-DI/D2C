@@ -60,7 +60,8 @@ class H2OAgent(BaseAgent):
         self._q_target_fns = self._agent_module.q_target_nets
         self._p_fn = self._agent_module.p_net
         self._p_target_fn = self._agent_module.p_target_net
-        self._d_fn = self._agent_module.dis_net
+        self._dsa_fn = self._agent_module.dsa_net
+        self._dsas_fn = self._agent_module.dsas_net
 
     def _init_vars(self) -> None:
         self._auto_lmbda = torch.tensor(self._initial_lambda, dtype=torch.float32, device=self._device)
@@ -77,13 +78,18 @@ class H2OAgent(BaseAgent):
             lr=opts.p[1],
             weight_decay=self._weight_decays,
         )
-        self._d_optimizer = utils.get_optimizer(opts.distance[0])(
-            parameters=self._d_fn.parameters(),
-            lr=opts.distance[1],
+        self._dsa_optimizer = utils.get_optimizer(opts.dsa[0])(
+            parameters=self._dsa_fn.parameters(),
+            lr=opts.dsa[1],
+            weight_decay=self._weight_decays,
+        )
+        self._dsas_optimizer = utils.get_optimizer(opts.dsas[0])(
+            parameters=self._dsas_fn.parameters(),
+            lr=opts.dsas[1],
             weight_decay=self._weight_decays,
         )
 
-    def _build_distance_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
+    def _build_dsa_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
         state = batch['s1']
         action = batch['a1']
 
@@ -97,7 +103,29 @@ class H2OAgent(BaseAgent):
         noise = noise_action - action
         norm = torch.norm(noise, dim=1, keepdim=True)
 
-        output = self._d_fn(state, noise_action).unsqueeze(1)
+        output = self._dsa_fn(state, noise_action).unsqueeze(1)
+        label = norm
+        distance_loss = nn.MSELoss()(output, label)
+
+        info = collections.OrderedDict()
+        info['distance_loss'] = distance_loss
+        return distance_loss, info
+    
+    def _build_dsas_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
+        state = batch['s1']
+        action = batch['a1']
+
+        state = state.unsqueeze(0).repeat(self._N, 1, 1)
+        state = state.view(self._batch_size * self._N, self._observation_space.shape[0])
+
+        action = action.unsqueeze(0).repeat(self._N, 1, 1)
+        action = action.view(self._batch_size * self._N, self._action_space.shape[0])
+
+        noise_action = ((torch.rand([self._batch_size * self._N, self._action_space.shape[0]]) - 0.5) * 3).to(self._device)
+        noise = noise_action - action
+        norm = torch.norm(noise, dim=1, keepdim=True)
+
+        output = self._dsas_fn(state, noise_action).unsqueeze(1)
         label = norm
         distance_loss = nn.MSELoss()(output, label)
 
@@ -181,11 +209,18 @@ class H2OAgent(BaseAgent):
         self._p_optimizer.step()
         return info
 
-    def _optimize_distance(self, batch: Dict):
-        distance_loss, info = self._build_distance_loss(batch)
-        self._d_optimizer.zero_grad()
-        distance_loss.backward()
-        self._d_optimizer.step()
+    def _optimize_dsa(self, batch: Dict):
+        dsa_loss, info = self._build_dsa_loss(batch)
+        self._dsa_optimizer.zero_grad()
+        dsa_loss.backward()
+        self._dsa_optimizer.step()
+        return info
+    
+    def _optimize_dsas(self, batch: Dict):
+        dsas_loss, info = self._build_dsas_loss(batch)
+        self._dsas_optimizer.zero_grad()
+        dsas_loss.backward()
+        self._dsas_optimizer.step()
         return info
 
     def _optimize_step(self, batch: Dict) -> Dict:
@@ -220,7 +255,8 @@ class H2OAgent(BaseAgent):
     def _get_modules(self) -> utils.Flags:
         model_params_q, n_q_fns = self._model_params.q
         model_params_p = self._model_params.p[0]
-        model_params_d = self._model_params.distance[0]
+        model_params_dsa = self._model_params.dsa[0]
+        model_params_dsas = self._model_params.dsas[0]
 
         def q_net_factory():
             return networks.CriticNetwork(
@@ -238,18 +274,27 @@ class H2OAgent(BaseAgent):
                 device=self._device,
             )
 
-        def dis_net_factory():
-            return networks.CriticNetwork(
-                observation_space=self._observation_space,
-                action_space=self._action_space,
-                fc_layer_params=model_params_d,
+        def dsa_net_factory():
+            return networks.ConcatDiscriminator(
+                input_dim=self._observation_space + self._action_space,
+                output_dim=2,
+                fc_layer_params=model_params_dsa,
+                device=self._device,
+            )
+            
+        def dsas_net_factory():
+            return networks.ConcatDiscriminator(
+                input_dim=2 * self._observation_space + self._action_space,
+                output_dim=2,
+                fc_layer_params=model_params_dsas,
                 device=self._device,
             )
 
         modules = utils.Flags(
             q_net_factory=q_net_factory,
             p_net_factory=p_net_factory,
-            dis_net_factory=dis_net_factory,
+            dsa_net_factory=dsa_net_factory,
+            dsas_net_factory=dsas_net_factory,
             n_q_fns=n_q_fns,
             device=self._device,
         )
@@ -267,7 +312,8 @@ class AgentModule(BaseAgentModule):
         self._q_target_nets = copy.deepcopy(self._q_nets)
         self._p_net = self._net_modules.p_net_factory().to(device)
         self._p_target_net = copy.deepcopy(self._p_net)
-        self._dis_net = self._net_modules.dis_net_factory().to(device)
+        self._dsa_net = self._net_modules.dsa_net_factory().to(device)
+        self._dsas_net = self._net_modules.dsas_net_factory().to(device)
 
     @property
     def q_nets(self) -> nn.ModuleList:
@@ -286,8 +332,12 @@ class AgentModule(BaseAgentModule):
         return self._p_target_net
 
     @property
-    def dis_net(self) -> nn.Module:
-        return self._dis_net
+    def dsa_net(self) -> nn.Module:
+        return self._dsa_net
+    
+    @property
+    def dsas_net(self) -> nn.Module:
+        return self._dsas_net
 
 
 
