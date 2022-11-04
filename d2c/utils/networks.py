@@ -240,3 +240,49 @@ class MLP(nn.Module):
     def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
         inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
         return self._model(inputs)
+    
+class Discriminator(nn.Module):
+    """ based on Multi-layer Perceptron.
+
+    :param int input_dim: the dimension of the input.
+    :param int output_dim: the dimension of the output.
+    :param tuple fc_layer_params: the network parameter. For example:
+        ``(300, 300)`` means a 2-layer network with 300 units in each layer.
+    :param device: which device to create this model on. Default to 'cpu'.
+    """
+    def __init__(
+            self,
+            input_dim: int,
+            output_dim: int,
+            fc_layer_params: Sequence[int] = (),
+            device: Union[str, int, torch.device] = 'cpu',
+    ) -> None:
+        super(Discriminator, self).__init__()
+        self._device = device
+        self._layers = []
+        hidden_sizes = [input_dim] + list(fc_layer_params)
+        for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):
+            self._layers += miniblock(in_dim, out_dim, None, nn.ReLU)
+        self._layers += miniblock(hidden_sizes[-1], output_dim, None, 2 * torch.tanh())
+        self._model = nn.Sequential(*self._layers)
+
+    def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
+        inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
+        return self._model(inputs)
+    
+class ConcatDiscriminator(Discriminator):
+    """  Concatenate inputs along dimension and then pass through MLP.
+
+    :param int dim: concatenate input dimension
+    """
+    def __init__(
+            self, 
+            *args, 
+            dim: int, 
+            **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dim = dim
+
+    def forward(self, *inputs: Union[np.ndarray, Tensor], **kwargs) -> Tensor:
+        flat_inputs = torch.cat(inputs, dim=self.dim)
+        return super().forward(flat_inputs, **kwargs)
