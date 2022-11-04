@@ -60,7 +60,7 @@ class H2OAgent(BaseAgent):
         self._q_target_fns = self._agent_module.q_target_nets
         self._p_fn = self._agent_module.p_net
         self._p_target_fn = self._agent_module.p_target_net
-        self._d_fn = self._agent_module.d_net
+        self._d_fn = self._agent_module.dis_net
 
     def _init_vars(self) -> None:
         self._auto_lmbda = torch.tensor(self._initial_lambda, dtype=torch.float32, device=self._device)
@@ -212,7 +212,7 @@ class H2OAgent(BaseAgent):
     def save(self, ckpt_name: str) -> None:
         torch.save(self._agent_module.state_dict(), ckpt_name + '.pth')
         torch.save(self._agent_module.p_net.state_dict(), ckpt_name + '_policy.pth')
-        torch.save(self._agent_module.d_net.state_dict(), ckpt_name + '_distance.pth')
+        torch.save(self._agent_module.dis_net.state_dict(), ckpt_name + '_distance.pth')
 
     def restore(self, ckpt_name: str) -> None:
         self._agent_module.load_state_dict(torch.load(ckpt_name + '.pth'))
@@ -238,7 +238,7 @@ class H2OAgent(BaseAgent):
                 device=self._device,
             )
 
-        def d_net_factory():
+        def dis_net_factory():
             return networks.CriticNetwork(
                 observation_space=self._observation_space,
                 action_space=self._action_space,
@@ -249,7 +249,7 @@ class H2OAgent(BaseAgent):
         modules = utils.Flags(
             q_net_factory=q_net_factory,
             p_net_factory=p_net_factory,
-            d_net_factory=d_net_factory,
+            dis_net_factory=dis_net_factory,
             n_q_fns=n_q_fns,
             device=self._device,
         )
@@ -267,7 +267,7 @@ class AgentModule(BaseAgentModule):
         self._q_target_nets = copy.deepcopy(self._q_nets)
         self._p_net = self._net_modules.p_net_factory().to(device)
         self._p_target_net = copy.deepcopy(self._p_net)
-        self._d_net = self._net_modules.d_net_factory().to(device)
+        self._dis_net = self._net_modules.dis_net_factory().to(device)
 
     @property
     def q_nets(self) -> nn.ModuleList:
@@ -286,8 +286,8 @@ class AgentModule(BaseAgentModule):
         return self._p_target_net
 
     @property
-    def d_net(self) -> nn.Module:
-        return self._d_net
+    def dis_net(self) -> nn.Module:
+        return self._dis_net
 
 
 
