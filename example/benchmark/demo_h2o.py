@@ -20,7 +20,7 @@ def main():
         prefix + 'data_source': 'mujoco',
         prefix + 'env_name': 'HalfCheetah-v2',
         prefix + 'data_name': 'halfcheetah_medium_replay-v2',
-        prefix + 'state_normalize': True,
+        prefix + 'state_normalize': False,
         prefix + 'score_normalize': True,
     }
     command_args.update({
