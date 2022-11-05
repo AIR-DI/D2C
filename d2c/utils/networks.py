@@ -240,7 +240,7 @@ class MLP(nn.Module):
     def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
         inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
         return self._model(inputs)
-    
+
 class Discriminator(nn.Module):
     """ based on Multi-layer Perceptron.
 
@@ -253,7 +253,7 @@ class Discriminator(nn.Module):
     def __init__(
             self,
             input_dim: int,
-            output_dim: int,
+            output_dim: int = 2,
             fc_layer_params: Sequence[int] = (),
             device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
@@ -273,12 +273,12 @@ class Discriminator(nn.Module):
 class ConcatDiscriminator(Discriminator):
     """  Concatenate inputs along dimension and then pass through MLP.
 
-    :param int dim: concatenate input dimension
+    :param int dim: concatenate inputs in row or column (0 or 1)
     """
     def __init__(
             self, 
             *args, 
-            dim: int, 
+            dim: int = 1, 
             **kwargs):
         super().__init__(*args, **kwargs)
         self.dim = dim
