@@ -89,49 +89,32 @@ class H2OAgent(BaseAgent):
             weight_decay=self._weight_decays,
         )
 
-    def _build_dsa_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
-        state = batch['s1']
-        action = batch['a1']
-
-        state = state.unsqueeze(0).repeat(self._N, 1, 1)
-        state = state.view(self._batch_size * self._N, self._observation_space.shape[0])
-
-        action = action.unsqueeze(0).repeat(self._N, 1, 1)
-        action = action.view(self._batch_size * self._N, self._action_space.shape[0])
-
-        noise_action = ((torch.rand([self._batch_size * self._N, self._action_space.shape[0]]) - 0.5) * 3).to(self._device)
-        noise = noise_action - action
-        norm = torch.norm(noise, dim=1, keepdim=True)
-
-        output = self._dsa_fn(state, noise_action).unsqueeze(1)
-        label = norm
-        distance_loss = nn.MSELoss()(output, label)
-
-        info = collections.OrderedDict()
-        info['distance_loss'] = distance_loss
-        return distance_loss, info
-    
-    def _build_dsas_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
-        state = batch['s1']
-        action = batch['a1']
-
-        state = state.unsqueeze(0).repeat(self._N, 1, 1)
-        state = state.view(self._batch_size * self._N, self._observation_space.shape[0])
-
-        action = action.unsqueeze(0).repeat(self._N, 1, 1)
-        action = action.view(self._batch_size * self._N, self._action_space.shape[0])
-
-        noise_action = ((torch.rand([self._batch_size * self._N, self._action_space.shape[0]]) - 0.5) * 3).to(self._device)
-        noise = noise_action - action
-        norm = torch.norm(noise, dim=1, keepdim=True)
-
-        output = self._dsas_fn(state, noise_action).unsqueeze(1)
-        label = norm
-        distance_loss = nn.MSELoss()(output, label)
+    def _build_dsa_loss(self, real_batch: Dict, sim_batch: Dict) -> Tuple[Tensor, Dict]:
+        real_state = real_batch['s1']
+        real_action = real_batch['a1']
+        real_next_state = real_batch['s2']
+        
+        sim_state = sim_batch['s1']
+        sim_action = sim_batch['a1']
+        sim_next_state = sim_batch['s2']
+        
+        real_sa_logits = self._dsa_fn(real_state, real_action)
+        real_sa_prob = F.softmax(real_sa_logits, dim=1)
+        sim_sa_logits = self._dsa_fn(sim_state, sim_action)
+        sim_sa_prob = F.softmax(sim_sa_logits, dim=1)
+        
+        real_adv_logits = self._dsas_fn(real_state, real_action, real_next_state)
+        real_sas_prob = F.softmax(real_adv_logits + real_sa_logits, dim=1)
+        sim_adv_logits = self._dsas_fn(sim_state, sim_action, sim_next_state)
+        sim_sas_prob = F.softmax(sim_adv_logits + sim_sa_logits, dim=1)
+        
+        dsa_loss = (- torch.log(real_sa_prob[:, 0]) - torch.log(sim_sa_prob[:, 1])).mean()
+        dsas_loss = (- torch.log(real_sas_prob[:, 0]) - torch.log(sim_sas_prob[:, 1])).mean()
 
         info = collections.OrderedDict()
-        info['distance_loss'] = distance_loss
-        return distance_loss, info
+        info['dsa_loss'] = dsa_loss
+        info['dsas_loss'] = dsas_loss
+        return dsa_loss, dsas_loss, info
 
     def _build_q_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
         s1 = batch['s1']
