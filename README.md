@@ -1,6 +1,6 @@
 # D2C
 
-D2C(**D**ata-**dr**iven **C**ontrol Library) is a Data-driven Control Library based on reinforcement learning. It is a platform for reinforcement learning experiments and solving various control problems in the real-world Scenario. On the on hand, It makes the RL experiments Fast and convenient. On the other hand, It makes offline reinforcement learning technology be applied in the real world application more possibly and simplistically.
+D2C(**D**ata-**d**riven **C**ontrol Library) is a Data-driven Control Library based on reinforcement learning. It is a platform for reinforcement learning experiments and solving various control problems in the real-world Scenario. On the on hand, It makes the RL experiments Fast and convenient. On the other hand, It makes offline reinforcement learning technology be applied in the real world application more possibly and simplistically.
 
 The supported RL algorithms include:
 
@@ -23,10 +23,74 @@ The tutorials and API documentation are hosted on [d2c.readthedocs.io](https://z
 The example scripts are under [example/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark) folder and [test/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/test) folder.
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+D2C interface can be installed as follows:
+```commandline
+git clone https://gitlab.com/air_rl/algorithms-library/d2c.git
+cd d2c
+pip install -e .
+```
 
 ## Usage
+Here is an example of TD3+BC. The full script can be found at [example/benchmark/demo_td3_bc.py](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/demo_td3_bc.py).
 
+First, a configuration file [model_config.json5](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/config/model_config.json5) which contains all the hyper-parameters of the RL algorithms should be placed in [example/benchmark/config/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/config). Please check this file for detail about the hyper-parameters.
+
+Then, the offline data for the algorithm should be placed in [example/benchmark/data/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/data/). Here, we use the mujoco dataset from D4RL and placed the data files in [example/benchmark/data/d4rl/mujoco/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/data/d4rl/mujoco/).
+
+Import some relevant packages:
+```
+import torch
+from d2c.trainers import Trainer
+from d2c.models import make_agent
+from d2c.envs import benchmark_env, LeaEnv
+from d2c.data import Data
+from d2c.evaluators import bm_eval
+from example.benchmark.config import make_config
+```
+
+Set the hyper-parameters and generate the `config`. Most of the hyper-parameters have been set up well in the configuration file. You can also modify the hyper-parameters like this:
+```
+command_args = {
+        'model.model_name': 'td3_bc',
+        'train.data_loader_name': None,
+        'train.device': device,
+        'train.seed': 0,
+        'train.total_train_steps': 1000000,
+        'train.batch_size': 256,
+        'train.agent_ckpt_name': '0810'
+    }
+config = make_config(command_args)
+```
+The keys in the dict ``command_args`` are the names of the hyper-parameters in the configuration file [model_config.json5](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/config/model_config.json5).
+
+Make the dataset:
+```
+bm_data = Data(config)
+s_norm = dict(zip(['obs_shift', 'obs_scale'], bm_data.state_shift_scale))
+data = bm_data.data
+```
+
+Make environments:
+```
+# The env of the benchmark to be used for policy evaluation.
+env = benchmark_env(config=config, **s_norm)
+# Contains dynamics model to be trained.
+lea_env = LeaEnv(config)
+```
+
+Setup the agent and the evaluator:
+```
+agent = make_agent(config=config, env=lea_env, data=data)
+evaluator = bm_eval(agent=agent, env=env, config=config)
+```
+
+Let's train it:
+```
+trainer = Trainer(agent=agent, train_data=data, config=config, env=lea_env, evaluator=evaluator)
+trainer.train()
+```
+
+You can also run it in command line. Please refer to the file [example/benchmark/run.sh](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/run.sh) for details.
 
 ## Support
 Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
@@ -35,17 +99,7 @@ Tell people where they can go to for help. It can be any combination of an issue
 If you have ideas for releases in the future, it is a good idea to list them in the README.
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+D2C is under development.
 
 ## Authors and acknowledgment
 Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
