@@ -3,7 +3,9 @@
 import logging
 import numpy as np
 from abc import ABC, abstractmethod
-from typing import Dict, Callable, Tuple
+from typing import Dict, Callable, Tuple, Union, List
+from d2c.envs import BaseEnv, LeaEnv
+from d2c.utils.utils import add_gaussian_noise
 from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.utils.dataloader import AppDataLoader, D4rlDataLoader, BaseDataLoader
 
@@ -22,7 +24,7 @@ class BaseData(ABC):
 
     def __init__(
             self,
-            data_path: str,
+            data_path: Union[str, List[str]],
     ) -> None:
         self._data_path = data_path
         self._data_loader = None
@@ -143,6 +145,115 @@ class Data(BaseData):
     @property
     def state_shift_scale(self) -> Tuple[np.ndarray, np.ndarray]:
         return self._data_loader.state_shift_scale
+
+
+class DataNoise(Data):
+    """Construct a dataset that with noised action.
+
+    :param config: the configuration.
+    :param BaseEnv env: the env to provide the action information(minimum and maximum).
+    """
+
+    def __init__(self, config, env: LeaEnv) -> None:
+        self._action_noise = config.model_config.train.action_noise
+        self._action_space = env.action_space
+        super(DataNoise, self).__init__(config)
+
+    def _build_data(self) -> None:
+        self._build_data_loader()
+        transitions = self._data_loader.get_transitions()
+        s1, a1, s2, a2, reward, cost, done = [transitions[k] for k in transitions.keys()]
+        # Add noise to the action.
+        a1 = add_gaussian_noise(a1, self._action_space, self._action_noise)
+        a2 = add_gaussian_noise(a2, self._action_space, self._action_noise)
+        self._buffer_size = s1.shape[0]
+        state_dim = s1.shape[-1]
+        action_dim = a1.shape[-1]
+        self._data = ReplayBuffer(
+            state_dim,
+            action_dim,
+            self._buffer_size,
+            self._device,
+        )
+        self._data.add_transitions(
+            state=s1,
+            action=a1,
+            next_state=s2,
+            next_action=a2,
+            reward=reward,
+            done=done,
+            cost=cost,
+        )
+
+    def _build_data_loader(self) -> None:
+        super(DataNoise, self)._build_data_loader()
+
+
+class DataMix(BaseData):
+    """Construct a dataset by mixing several data."""
+
+    def __init__(self, config) -> None:
+        env_config = config.model_config.env.external
+        self._device = config.model_config.train.device
+        if env_config.data_file_path is not None:
+            data_path = env_config.data_file_path
+            data_loader_name = env_config.benchmark_name
+        else:
+            raise ValueError('There is no data file to load!')
+        assert isinstance(data_path, list)
+        data_files = data_path[:-1]  # The data file list.
+        mix_ratio = data_path[-1]  # The ratio of each data that chosen to be mixed.
+        assert len(data_files) == len(mix_ratio)
+        for _r in mix_ratio:
+            assert 0 < _r <= 1, 'The ratio of the data should between (0, 1]!'
+
+
+        logging.info(f'Loading the offline dataset file from {data_path}.')
+        if data_loader_name not in self._data_loader_list.keys():
+            raise NotImplementedError(f'There is no data loader for {data_loader_name}!')
+        self._app_cfg = app_config
+        self._env_cfg = env_config
+        self._data_loader_name = data_loader_name
+        super(DataMix, self).__init__(data_path)
+
+    def _build_data(self) -> None:
+        self._build_data_loader()
+        transitions = self._data_loader.get_transitions()
+        s1, a1, s2, a2, reward, cost, done = [transitions[k] for k in transitions.keys()]
+        self._buffer_size = s1.shape[0]
+        state_dim = s1.shape[-1]
+        action_dim = a1.shape[-1]
+        self._data = ReplayBuffer(
+            state_dim,
+            action_dim,
+            self._buffer_size,
+            self._device,
+        )
+        self._data.add_transitions(
+            state=s1,
+            action=a1,
+            next_state=s2,
+            next_action=a2,
+            reward=reward,
+            done=done,
+            cost=cost,
+        )
+
+    def _build_data_loader(self) -> None:
+        self._data_loader = self._data_loader_list[self._data_loader_name]()
+
+    def _d4rl_data_loader(self) -> D4rlDataLoader:
+        state_normalize = self._env_cfg.state_normalize
+        reward_normalize = self._env_cfg.reward_normalize
+        return D4rlDataLoader(
+            self._data_path,
+            state_normalize,
+            reward_normalize,
+        )
+
+    @property
+    def state_shift_scale(self) -> Tuple[np.ndarray, np.ndarray]:
+        pass
 
 
 

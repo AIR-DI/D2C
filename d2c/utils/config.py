@@ -133,7 +133,7 @@ class ConfigBuilder:
 
         train_params = ['device', 'train_test_ratio', 'batch_size',
                         'update_freq', 'update_rate', 'discount',
-                        'total_train_steps', 'seed']
+                        'total_train_steps', 'seed', 'action_noise']
         for k in train_params:
             _dict.update({k: _model_cfg.train[k]})
 
@@ -236,9 +236,8 @@ class ConfigBuilder:
             self._env_ext.benchmark_name,
             self._env_ext.data_source,
             model_name,
-            self._env_ext.env_name,
-            self._env_ext.data_name,
-            's_norm_'+str(self._env_ext.state_normalize),
+            self._env_ext.env_name + '_' + self._env_ext.data_name,
+            # 's_norm_'+str(self._env_ext.state_normalize),
         )
 
         if not self._model_cfg.train.get('behavior_ckpt_dir'):

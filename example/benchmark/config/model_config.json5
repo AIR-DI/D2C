@@ -55,6 +55,7 @@
   train: {
     device: 'cuda',
     data_loader_name: null,  // 'app' for real-world application data.
+    action_noise: null,  // The std value of the gaussian noise added to the action.
     train_test_ratio: 0.99,
     batch_size: 64,
     model_buffer_size: 1000000,
