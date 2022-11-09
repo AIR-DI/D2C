@@ -1,13 +1,17 @@
 """Loading data and constructing the buffer."""
 
+import os
+# import sys
+# sys.path.append('../../')
 import logging
 import numpy as np
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from typing import Dict, Callable, Tuple, Union, List
 from d2c.envs import BaseEnv, LeaEnv
 from d2c.utils.utils import add_gaussian_noise
 from d2c.utils.replaybuffer import ReplayBuffer
-from d2c.utils.dataloader import AppDataLoader, D4rlDataLoader, BaseDataLoader
+from d2c.utils.dataloader import AppDataLoader, D4rlDataLoader, BaseDataLoader, BaseBMLoader
 
 
 class BaseData(ABC):
@@ -201,26 +205,34 @@ class DataMix(BaseData):
         else:
             raise ValueError('There is no data file to load!')
         assert isinstance(data_path, list)
-        data_files = data_path[:-1]  # The data file list.
-        mix_ratio = data_path[-1]  # The ratio of each data that chosen to be mixed.
+        if isinstance(data_path[-1], str):  # There is no mix ratio in the input.
+            mix_ratio = [1] * len(data_path)
+            data_files = data_path  # The data file list.
+        else:
+            data_files = data_path[:-1]  # The data file list.
+            mix_ratio = data_path[-1]  # The ratio of each data that chosen to be mixed.
+            assert isinstance(mix_ratio, list)
         assert len(data_files) == len(mix_ratio)
         for _r in mix_ratio:
             assert 0 < _r <= 1, 'The ratio of the data should between (0, 1]!'
+        self._mix_ratio = mix_ratio
 
-
-        logging.info(f'Loading the offline dataset file from {data_path}.')
         if data_loader_name not in self._data_loader_list.keys():
             raise NotImplementedError(f'There is no data loader for {data_loader_name}!')
-        self._app_cfg = app_config
         self._env_cfg = env_config
         self._data_loader_name = data_loader_name
-        super(DataMix, self).__init__(data_path)
+        self._obs_shift, self._obs_scale = None, None
+        super(DataMix, self).__init__(data_files)
 
     def _build_data(self) -> None:
-        self._build_data_loader()
-        transitions = self._data_loader.get_transitions()
+        transitions = self._multi_data_load()
         s1, a1, s2, a2, reward, cost, done = [transitions[k] for k in transitions.keys()]
+        if self._env_cfg.state_normalize:
+            s1, s2, self._obs_shift, self._obs_scale = BaseBMLoader.norm_state(s1, s2)
+        if self._env_cfg.reward_normalize:
+            reward = BaseBMLoader.norm_reward(reward)
         self._buffer_size = s1.shape[0]
+        logging.info(f'The mix data size is {self._buffer_size}.')
         state_dim = s1.shape[-1]
         action_dim = a1.shape[-1]
         self._data = ReplayBuffer(
@@ -240,20 +252,47 @@ class DataMix(BaseData):
         )
 
     def _build_data_loader(self) -> None:
-        self._data_loader = self._data_loader_list[self._data_loader_name]()
+        self._data_loader = self._data_loader_list[self._data_loader_name]
 
-    def _d4rl_data_loader(self) -> D4rlDataLoader:
-        state_normalize = self._env_cfg.state_normalize
-        reward_normalize = self._env_cfg.reward_normalize
+    @staticmethod
+    def _d4rl_data_loader(data_path: str) -> D4rlDataLoader:
+        state_normalize = False
+        reward_normalize = False
         return D4rlDataLoader(
-            self._data_path,
+            data_path,
             state_normalize,
             reward_normalize,
         )
 
     @property
+    def _data_loader_list(self) -> Dict[str, Callable[..., BaseDataLoader]]:
+        """A dict of the alternative Data loaders."""
+        return dict(
+            d4rl=self._d4rl_data_loader,
+        )
+
+    def _multi_data_load(self) -> OrderedDict:
+        self._build_data_loader()
+        logging.info('='*10+'Loading the mix datasets'+'='*10)
+        transitions = None
+        for i, file in enumerate(self._data_path):
+            logging.info(f'Mix data {i}: Loading {os.path.basename(file)} | mix ratio: {self._mix_ratio[i]}.')
+            data_loader = self._data_loader(file)
+            trans = data_loader.get_transitions()
+            _num = int(trans['s1'].shape[0] * self._mix_ratio[i])
+            logging.info(f'The number of the chosen transitions is {_num}.')
+            if i == 0:
+                for k, v in trans.items():
+                    trans[k] = v[:_num]
+                transitions = trans
+            else:
+                for k, v in trans.items():
+                    transitions[k] = np.concatenate([transitions[k], v[:_num]])
+        return transitions
+
+    @property
     def state_shift_scale(self) -> Tuple[np.ndarray, np.ndarray]:
-        pass
+        return self._obs_shift, self._obs_scale
 
 
 

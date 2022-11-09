@@ -83,9 +83,9 @@ class BaseBMLoader(BaseDataLoader):
         """
         demo_s1, demo_a1, demo_s2, demo_a2, demo_r, demo_c, demo_d = self._load_data()
         if self._state_normalize:
-            demo_s1, demo_s2, self._obs_shift, self._obs_scale = self._norm_state(demo_s1, demo_s2)
+            demo_s1, demo_s2, self._obs_shift, self._obs_scale = self.norm_state(demo_s1, demo_s2)
         if self._reward_normalize:
-            demo_r = self._norm_reward(demo_r)
+            demo_r = self.norm_reward(demo_r)
         transitions = OrderedDict(
             s1=demo_s1,
             a1=demo_a1,
@@ -98,7 +98,7 @@ class BaseBMLoader(BaseDataLoader):
         return transitions
 
     @staticmethod
-    def _norm_state(s1: np.ndarray, s2: np.ndarray)\
+    def norm_state(s1: np.ndarray, s2: np.ndarray)\
             -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Normalize the states.
 
@@ -113,7 +113,7 @@ class BaseBMLoader(BaseDataLoader):
         return s1, s2, shift, scale
 
     @staticmethod
-    def _norm_reward(r: np.ndarray) -> np.ndarray:
+    def norm_reward(r: np.ndarray) -> np.ndarray:
         """Normalize the reward.
 
         :param  np.ndarray r: reward;

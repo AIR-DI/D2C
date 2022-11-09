@@ -1,9 +1,8 @@
 import os
-
 import numpy as np
 import pytest
 import torch
-from d2c.data import Data, DataNoise
+from d2c.data import Data, DataNoise, DataMix
 from d2c.envs import LeaEnv
 from d2c.utils.utils import abs_file_path
 from d2c.utils.config import ConfigBuilder
@@ -81,6 +80,44 @@ class TestData:
         for i in range(10):
             print(batch1['a1'][i])
             print(_batch['a1'][i], '\n')
+
+    def test_data_mix(self):
+        _dir = '../../example/benchmark/data/d4rl/mujoco/'
+        data_files = [_dir+'hopper_random-v2', _dir+'hopper_medium_expert-v2', [0.1, 1]]
+        prefix = 'env.external.'
+        command_args = {
+            prefix + 'benchmark_name': 'd4rl',
+            prefix + 'data_source': 'mujoco',
+            prefix + 'env_name': 'Hopper-v2',
+            prefix + 'data_file_path': data_files,
+            prefix + 'state_normalize': True,
+        }
+
+        cfg_builder = ConfigBuilder(
+            app_config=app_config,
+            model_config_path=self.model_config_path,
+            work_abs_dir=self.work_abs_dir,
+            command_args=command_args,
+        )
+        config = cfg_builder.build_config()
+        data_mix = DataMix(config)
+        data = data_mix.data
+        _batch = data.get_batch_indices(np.arange(64))
+        assert isinstance(_batch['s1'], torch.Tensor)
+        assert _batch['s1'].shape == (64, 11)
+        assert _batch['a1'].shape == (64, 3)
+        assert _batch['a2'].shape == (64, 3)
+        shift, scale = data_mix.state_shift_scale
+        assert shift.shape == (11,)
+        assert scale.shape == (11,)
+        print(shift, scale)
+
+        config.model_config.env.external.data_file_path = data_files[0]
+        data1 = Data(config).data
+        config.model_config.env.external.data_file_path = data_files[1]
+        data2 = Data(config).data
+        assert data.size == (int(data1.size * data_files[-1][0])
+                             + int(data2.size * data_files[-1][1]))
 
 
 if __name__ == '__main__':
