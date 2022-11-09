@@ -33,26 +33,33 @@ class H2OAgent(BaseAgent):
 
     def __init__(
             self,
-            policy_noise: float = 0.2,
             update_actor_freq: int = 2,
-            noise_clip: float = 0.5,
             alpha: float = 2.5,
-            N: int = 20,
             initial_lambda: float = 5,
             lambda_lr: float = 3e-4,
-            train_d_steps: int = int(1e+5),
             automatic_entropy_tuning: bool = True,
+            log_alpha_init_value: float = 0.0,
+            target_entropy: float = 0.0,
+            alpha_multiplier: float = 1.0,
+            sample_n_actions: int = 10,
+            cql_importance_sample: bool = True,
+            cql_lagrange: bool = False,
+            cql_target_action_gap: float = 1.0,
+            cql_temp: float = 1.0,
+            cql_max_target_backup: bool = False,
+            cql_clip_diff_min: int = -1000,
+            cql_clip_diff_max: int = 1000,
+            min_q_weight: float = 1.0,
             **kwargs: Any,
     ) -> None:
-        self._policy_noise = policy_noise
         self._update_actor_freq = update_actor_freq
-        self._noise_clip = noise_clip
         self._alpha = alpha
-        self._N = N
         self._initial_lambda = initial_lambda
-        self._train_d_steps = train_d_steps
         self._lambda_lr = lambda_lr
         self._automatic_entropy_tuning = automatic_entropy_tuning
+        self._log_alpha_init_value = log_alpha_init_value
+        self._target_entropy = target_entropy
+        self._alpha_multiplier = alpha_multiplier
         self._p_info = collections.OrderedDict()
         super(H2OAgent, self).__init__(**kwargs)
 
@@ -64,9 +71,8 @@ class H2OAgent(BaseAgent):
         self._p_target_fn = self._agent_module.p_target_net
         self._dsa_fn = self._agent_module.dsa_net
         self._dsas_fn = self._agent_module.dsas_net
-
-    def _init_vars(self) -> None:
-        self._auto_lmbda = torch.tensor(self._initial_lambda, dtype=torch.float32, device=self._device)
+        if self._automatic_entropy_tuning:
+            self._log_alpha_fn = self._agent_module.log_alpha_net
 
     def _build_optimizers(self) -> None:
         opts = self._optimizers
@@ -88,6 +94,12 @@ class H2OAgent(BaseAgent):
         self._dsas_optimizer = utils.get_optimizer(opts.dsas[0])(
             parameters=self._dsas_fn.parameters(),
             lr=opts.dsas[1],
+            weight_decay=self._weight_decays,
+        )
+        if self._automatic_entropy_tuning:
+            self._alpha_optimizer = utils.get_optimizer(opts.alpha[0])(
+            parameters=self._log_alpha_fn.parameters(),
+            lr=opts.alpha[1],
             weight_decay=self._weight_decays,
         )
 
@@ -155,7 +167,7 @@ class H2OAgent(BaseAgent):
         info['dsc_min'] = dsc.min()
         return q_loss, info
     
-    def _build_p_loss(self, real_batch: Dict, sim_batch: Dict, bc=False) -> Tuple[Tensor, Dict]:
+    def _build_p_alpha_loss(self, real_batch: Dict, sim_batch: Dict, bc=False) -> Tuple[Tensor, Dict]:
         real_state = real_batch['s1']
         real_action = real_batch['a1']
         
@@ -168,16 +180,15 @@ class H2OAgent(BaseAgent):
         _, df_new_action, df_log_pi = self._p_fn(df_state)
         
         if self._automatic_entropy_tuning:
-            # TODO
-            alpha_loss = -(self.log_alpha() * (df_log_pi + self.config.target_entropy).detach()).mean()
-            alpha = self.log_alpha().exp() * self.config.alpha_multiplier
+            alpha_loss = -(self._log_alpha_fn() * (df_log_pi + self._target_entropy).detach()).mean()
+            alpha = self._log_alpha_fn().exp() * self._alpha_multiplier
         else:
             alpha_loss = df_state.new_tensor(0.0)
-            alpha = df_state.new_tensor(self.config.alpha_multiplier)
+            alpha = df_state.new_tensor(self._alpha_multiplier)
             
         if bc:
-            log_probs = self._p_fn.get_log_density(df_state, df_action)
-            p_loss = (alpha * df_log_pi - log_probs).mean()
+            log_prob = self._p_fn.get_log_density(df_state, df_action)
+            p_loss = (alpha * df_log_pi - log_prob).mean()
         else:
             q_new_action = torch.min(
                 self._q_fns[0](df_state, df_new_action),
@@ -189,7 +200,20 @@ class H2OAgent(BaseAgent):
         info['actor_loss'] = p_loss
         info['alpha_loss'] = alpha_loss
 
-        return p_loss, info
+        return p_loss, alpha_loss, info
+    
+    def _optimize_p_alpha(self, batch: Dict) -> Dict:
+        p_loss, alpha_loss, info = self._build_p_alpha_loss(batch)
+        
+        self._q_optimizer.zero_grad()
+        p_loss.backward()
+        self._q_optimizer.step()
+        
+        self._alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self._alpha_optimizer.step()
+        
+        return info
 
     def _optimize_q(self, batch: Dict) -> Dict:
         loss, info = self._build_q_loss(batch)
@@ -278,7 +302,7 @@ class H2OAgent(BaseAgent):
                 fc_layer_params=model_params_dsas,
                 device=self._device,
             )
-
+        
         modules = utils.Flags(
             q_net_factory=q_net_factory,
             p_net_factory=p_net_factory,
@@ -287,6 +311,14 @@ class H2OAgent(BaseAgent):
             n_q_fns=n_q_fns,
             device=self._device,
         )
+        
+        if self._automatic_entropy_tuning:
+            def log_alpha_net_factory():
+                return networks.Scalar(
+                    init_value=self._log_alpha_init_value
+                )
+            setattr(utils.Flags, "log_alpha_net_factory", log_alpha_net_factory)
+        
         return modules
 
 
@@ -303,7 +335,9 @@ class AgentModule(BaseAgentModule):
         self._p_target_net = copy.deepcopy(self._p_net)
         self._dsa_net = self._net_modules.dsa_net_factory().to(device)
         self._dsas_net = self._net_modules.dsas_net_factory().to(device)
-
+        if self._automatic_entropy_tuning:
+            self._log_alpha_net = self._net_modules.log_alpha_net_factory()
+    
     @property
     def q_nets(self) -> nn.ModuleList:
         return self._q_nets
@@ -327,6 +361,11 @@ class AgentModule(BaseAgentModule):
     @property
     def dsas_net(self) -> nn.Module:
         return self._dsas_net
+    
+    @property
+    def log_alpha_net(self) -> nn.Module:
+        return self._log_alpha_net
+    
 
 
 
