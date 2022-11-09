@@ -286,3 +286,20 @@ class ConcatDiscriminator(Discriminator):
     def forward(self, *inputs: Union[np.ndarray, Tensor], **kwargs) -> Tensor:
         flat_inputs = torch.cat(inputs, dim=self.dim)
         return super().forward(flat_inputs, **kwargs)
+
+class Scalar(nn.Module):
+    """ Scalar network
+
+    :param float init_value: initialized value for the scalar
+    """
+    def __init__(
+        self, 
+        init_value: float,
+    ) -> None:
+        super().__init__()
+        self.constant = nn.Parameter(
+            torch.tensor(init_value, dtype=torch.float32)
+        )
+
+    def forward(self) -> Tensor:
+        return self.constant
