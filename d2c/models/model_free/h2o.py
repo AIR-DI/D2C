@@ -41,6 +41,7 @@ class H2OAgent(BaseAgent):
             initial_lambda: float = 5,
             lambda_lr: float = 3e-4,
             train_d_steps: int = int(1e+5),
+            automatic_entropy_tuning: bool = True,
             **kwargs: Any,
     ) -> None:
         self._policy_noise = policy_noise
@@ -51,6 +52,7 @@ class H2OAgent(BaseAgent):
         self._initial_lambda = initial_lambda
         self._train_d_steps = train_d_steps
         self._lambda_lr = lambda_lr
+        self._automatic_entropy_tuning = automatic_entropy_tuning
         self._p_info = collections.OrderedDict()
         super(H2OAgent, self).__init__(**kwargs)
 
@@ -152,44 +154,48 @@ class H2OAgent(BaseAgent):
         info['dsc'] = dsc.mean()
         info['dsc_min'] = dsc.min()
         return q_loss, info
+    
+    def _build_p_loss(self, real_batch: Dict, sim_batch: Dict, bc=False) -> Tuple[Tensor, Dict]:
+        real_state = real_batch['s1']
+        real_action = real_batch['a1']
+        
+        sim_state = sim_batch['s1']
+        sim_action = sim_batch['a1']
+        
+        df_state = torch.cat([real_state, sim_state], dim=0)
+        df_action = torch.cat([real_action, sim_action], dim=0)
+        
+        _, df_new_action, df_log_pi = self._p_fn(df_state)
+        
+        if self._automatic_entropy_tuning:
+            # TODO
+            alpha_loss = -(self.log_alpha() * (df_log_pi + self.config.target_entropy).detach()).mean()
+            alpha = self.log_alpha().exp() * self.config.alpha_multiplier
+        else:
+            alpha_loss = df_state.new_tensor(0.0)
+            alpha = df_state.new_tensor(self.config.alpha_multiplier)
+            
+        if bc:
+            log_probs = self._p_fn.get_log_density(df_state, df_action)
+            p_loss = (alpha * df_log_pi - log_probs).mean()
+        else:
+            q_new_action = torch.min(
+                self._q_fns[0](df_state, df_new_action),
+                self._q_fns[1](df_state, df_new_action),
+            )
+            p_loss = (alpha * df_log_pi - q_new_action).mean() 
 
-    def _build_p_alpha_loss(self, batch: Dict) -> Tuple[Tensor, Tensor, Dict]:
-        s = batch['s1']
-        a = batch['a1']
-        pi = self._p_fn(s)
-        q = self._q_fns[0](s, pi)
-        scaler = self._alpha / q.abs().mean().detach()
-        bc_loss = F.mse_loss(pi, a)
-        distance = self._d_fn(s, pi)
-        distance_diff = (distance - self._d_fn(s, a).detach()).mean()
-
-        with torch.no_grad():
-            lambda_loss = self._auto_lmbda * distance_diff
-            self._auto_lmbda += self._lambda_lr * lambda_loss.cpu().item()
-            self._auto_lmbda = torch.clip(self._auto_lmbda, LAMBDA_MIN, LAMBDA_MAX)
-
-        p_loss = -scaler * q.mean() + distance_diff * self._auto_lmbda.detach()
         info = collections.OrderedDict()
-        info['lambda'] = self._auto_lmbda
         info['actor_loss'] = p_loss
-        info['bc_loss'] = bc_loss
-        info['distance_diff'] = distance_diff
-        info['Q_in_actor_loss'] = q.detach().mean()
-        info['distance_in_actor'] = distance.detach().mean()
-        return p_loss, distance_diff, info
+        info['alpha_loss'] = alpha_loss
+
+        return p_loss, info
 
     def _optimize_q(self, batch: Dict) -> Dict:
         loss, info = self._build_q_loss(batch)
         self._q_optimizer.zero_grad()
         loss.backward()
         self._q_optimizer.step()
-        return info
-
-    def _optimize_p_alpha(self, batch: Dict) -> Dict:
-        p_loss, distance_diff, info = self._build_p_alpha_loss(batch)
-        self._p_optimizer.zero_grad()
-        p_loss.backward()
-        self._p_optimizer.step()
         return info
 
     def _optimize_dsa(self, batch: Dict):
@@ -213,7 +219,7 @@ class H2OAgent(BaseAgent):
             distance_info = self._optimize_distance(batch)
             info.update(distance_info)
         if self._global_step % self._update_actor_freq == 0:
-            self._p_info = self._optimize_p_alpha(batch)
+            # self._p_info = self._optimize_p_alpha(batch)
             # Update the target networks.
             self._update_target_fns(self._q_fns, self._q_target_fns)
             self._update_target_fns(self._p_fn, self._p_target_fn)
@@ -250,7 +256,7 @@ class H2OAgent(BaseAgent):
             )
 
         def p_net_factory():
-            return networks.ActorNetworkDet(
+            return networks.ActorNetwork(
                 observation_space=self._observation_space,
                 action_space=self._action_space,
                 fc_layer_params=model_params_p,
