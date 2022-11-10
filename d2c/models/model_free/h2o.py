@@ -40,6 +40,7 @@ class H2OAgent(BaseAgent):
             automatic_entropy_tuning: bool = True,
             log_alpha_init_value: float = 0.0,
             target_entropy: float = 0.0,
+            backup_entropy: bool = False,
             alpha_multiplier: float = 1.0,
             sample_n_actions: int = 10,
             cql_importance_sample: bool = True,
@@ -50,6 +51,12 @@ class H2OAgent(BaseAgent):
             cql_clip_diff_min: int = -1000,
             cql_clip_diff_max: int = 1000,
             min_q_weight: float = 1.0,
+            use_td_target_ratio: bool = True,
+            use_value_regularization: bool = True,
+            use_adaptive_weighting: bool = True,
+            use_variant: bool = False,
+            clip_dynamics_ratio_min: float = 1e-5,
+            clip_dynamics_ratio_max: float = 1.0,
             **kwargs: Any,
     ) -> None:
         self._update_actor_freq = update_actor_freq
@@ -60,6 +67,20 @@ class H2OAgent(BaseAgent):
         self._log_alpha_init_value = log_alpha_init_value
         self._target_entropy = target_entropy
         self._alpha_multiplier = alpha_multiplier
+        self._backup_entropy = backup_entropy
+        
+        self._cql_temp = cql_temp
+        self._cql_lagrange = cql_lagrange
+        self._cql_clip_diff_min = cql_clip_diff_min
+        self._cql_clip_diff_max = cql_clip_diff_max
+        self._min_q_weight = min_q_weight
+        
+        self._use_td_target_ratio = use_td_target_ratio
+        self._use_value_regularization = use_value_regularization
+        self._use_adaptive_weighting = use_adaptive_weighting
+        self._use_variant = use_variant
+        self._clip_dynamics_ratio_min = clip_dynamics_ratio_min
+        self._clip_dynamics_ratio_max = clip_dynamics_ratio_max
         self._p_info = collections.OrderedDict()
         super(H2OAgent, self).__init__(**kwargs)
 
@@ -130,33 +151,111 @@ class H2OAgent(BaseAgent):
         info['dsas_loss'] = dsas_loss
         return dsa_loss, dsas_loss, info
 
-    def _build_q_loss(self, batch: Dict) -> Tuple[Tensor, Dict]:
-        s1 = batch['s1']
-        s2 = batch['s2']
-        a1 = batch['a1']
-        r = batch['reward']
-        dsc = batch['dsc']
-        with torch.no_grad():
-            # Select action according to policy and add clipped noise
-            noise = (
-                    torch.randn_like(a1) * self._policy_noise
-            ).clamp(-self._noise_clip, self._noise_clip)
-            next_action = (
-                    self._p_target_fn(s2) + noise
-            ).clamp(self._a_min, self._a_max)
+    def _build_q_loss(self, , real_batch: Dict, sim_batch: Dict) -> Tuple[Tensor, Dict]:
+        real_state = real_batch['s1']
+        real_action = real_batch['a1']
+        real_r = real_batch['reward']
+        real_next_state = real_batch['s2']
+        real_dsc = real_batch['dsc']
+        
+        sim_state = sim_batch['s1']
+        sim_action = sim_batch['a1']
+        sim_r = sim_batch['reward']
+        sim_next_state = sim_batch['s2']
+        sim_dsc = sim_batch['dsc']
+        
+        real_q1_pred = self._q_fns[0](real_state, real_action)
+        real_q2_pred = self._q_fns[1](real_state, real_action)
+        sim_q1_pred = self._q_fns[0](sim_state, sim_action)
+        sim_q2_pred = self._q_fns[1](sim_state, sim_action)
+        
+        _, real_new_next_action, real_next_log_pi = self._p_fn(real_next_state)
+        real_target_q_values = torch.min(
+                self._q_target_fns[0](real_next_state, real_new_next_action),
+                self._q_target_fns[1](real_next_state, real_new_next_action),
+            )
+        
+        _, sim_new_next_action, sim_next_log_pi = self._p_fn(sim_next_state)
+        sim_target_q_values = torch.min(
+                self._q_target_fns[0](sim_next_state, sim_new_next_action),
+                self._q_target_fns[1](sim_next_state, sim_new_next_action),
+            )
+        
+        if self._backup_entropy:
+            real_target_q_values = real_target_q_values - self.alpha * real_next_log_pi
+            sim_target_q_values = sim_target_q_values - self.alpha * sim_next_log_pi
+            
+        real_td_target = real_r + real_dsc * self._discount * real_target_q_values
+        sim_td_target = sim_r + sim_dsc * self._discount * sim_target_q_values
 
-            # Compute the target Q value
-            target_q1 = self._q_target_fns[0](s2, next_action)
-            target_q2 = self._q_target_fns[1](s2, next_action)
-            target_q = torch.min(target_q1, target_q2)
-            target_q = r + dsc * self._discount * target_q
+        real_qf1_loss = F.mse_loss(real_q1_pred, real_td_target)
+        real_qf2_loss = F.mse_loss(real_q2_pred, real_td_target)
+        
+        if self._use_td_target_ratio:
+            #TODO
+            sqrt_IS_ratio = torch.clamp(self.real_sim_dynacmis_ratio(sim_state, sim_action, sim_next_state), self._clip_dynamics_ratio_min, self._clip_dynamics_ratio_max).sqrt()
+        else:
+            sqrt_IS_ratio = torch.ones((sim_state.shape[0],)).to(self._device)
+            
+        sim_qf1_loss = F.mse_loss(sqrt_IS_ratio * sim_q1_pred, sqrt_IS_ratio * sim_td_target)
+        sim_qf2_loss = F.mse_loss(sqrt_IS_ratio * sim_q2_pred, sqrt_IS_ratio * sim_td_target)
+        
+        qf1_loss = real_qf1_loss + sim_qf1_loss
+        qf2_loss = real_qf2_loss + sim_qf2_loss 
+        
+        if not self._use_value_regularization:
+            q_loss = qf1_loss + qf2_loss
+        else:
+            if self._use_adaptive_weighting:
+                u_sa = self.kl_sim_divergence(sim_state, sim_action, sim_next_state)
+            else:
+                u_sa = torch.ones(sim_r.shape[0], device=self._device)
+                
+            omega = u_sa / u_sa.sum()
+            
+            if not self._use_variant:
+                sim_q1_pred += torch.log(omega)
+                sim_q2_pred += torch.log(omega)
+                
+            std_omega = omega.std()
+            
+            if self.config.use_variant:
+                sim_qf1_gap = (omega * sim_q1_pred).sum()
+                sim_qf2_gap = (omega * sim_q2_pred).sum()
+            else:
+                sim_qf1_gap = torch.logsumexp(sim_q1_pred / self._cql_temp, dim=0) * self._cql_temp
+                sim_qf2_gap = torch.logsumexp(sim_q2_pred / self._cql_temp, dim=0) * self._cql_temp
+                
+            qf1_diff = torch.clamp(
+                sim_qf1_gap - real_q1_pred.mean(),
+                self._cql_clip_diff_min,
+                self._cql_clip_diff_max,
+            )
+            qf2_diff = torch.clamp(
+                sim_qf2_gap - real_q2_pred.mean(),
+                self._cql_clip_diff_min,
+                self._cql_clip_diff_max,
+            )
+            
+            #TODO
+            if self._cql_lagrange:
+                alpha_prime = torch.clamp(torch.exp(self.log_alpha_prime()), min=0.0, max=1000000.0)
+                min_qf1_loss = alpha_prime * self._min_q_weight * (qf1_diff - self._cql_target_action_gap)
+                min_qf2_loss = alpha_prime * self._min_q_weight * (qf2_diff - self._cql_target_action_gap)
 
-        # Get current Q estimates
-        current_q1 = self._q_fns[0](s1, a1)
-        current_q2 = self._q_fns[1](s1, a1)
+                self.alpha_prime_optimizer.zero_grad()
+                alpha_prime_loss = (-cql_min_qf1_loss - cql_min_qf2_loss)*0.5
+                alpha_prime_loss.backward(retain_graph=True)
+                
+                self.alpha_prime_optimizer.step()
+            else:
+                min_qf1_loss = qf1_diff * self._min_q_weight
+                min_qf2_loss = qf2_diff * self._min_q_weight
+                alpha_prime_loss = df_state.new_tensor(0.0)
+                alpha_prime = df_observations.new_tensor(0.0)
+                
+            q_loss = qf1_loss + qf2_loss + min_qf1_loss + min_qf2_loss
 
-        # Compute critic loss
-        q_loss = F.mse_loss(current_q1, target_q) + F.mse_loss(current_q2, target_q)
         info = collections.OrderedDict()
         info['Q1'] = current_q1.detach().mean()
         info['Q2'] = current_q2.detach().mean()
@@ -181,20 +280,20 @@ class H2OAgent(BaseAgent):
         
         if self._automatic_entropy_tuning:
             alpha_loss = -(self._log_alpha_fn() * (df_log_pi + self._target_entropy).detach()).mean()
-            alpha = self._log_alpha_fn().exp() * self._alpha_multiplier
+            self.alpha = self._log_alpha_fn().exp() * self._alpha_multiplier
         else:
             alpha_loss = df_state.new_tensor(0.0)
-            alpha = df_state.new_tensor(self._alpha_multiplier)
+            self.alpha = df_state.new_tensor(self._alpha_multiplier)
             
         if bc:
             log_prob = self._p_fn.get_log_density(df_state, df_action)
-            p_loss = (alpha * df_log_pi - log_prob).mean()
+            p_loss = (self.alpha * df_log_pi - log_prob).mean()
         else:
             q_new_action = torch.min(
                 self._q_fns[0](df_state, df_new_action),
                 self._q_fns[1](df_state, df_new_action),
             )
-            p_loss = (alpha * df_log_pi - q_new_action).mean() 
+            p_loss = (self.alpha * df_log_pi - q_new_action).mean() 
 
         info = collections.OrderedDict()
         info['actor_loss'] = p_loss
@@ -256,6 +355,17 @@ class H2OAgent(BaseAgent):
             a_network=self._p_fn
         )
         self._test_policies['main'] = policy
+        
+    def real_sim_dynacmis_ratio(self, states, actions, next_states):
+        sa_logits = self._dsa_fn(states, actions)
+        sa_prob = F.softmax(sa_logits, dim=1)
+        adv_logits = self._dsas_fn(states, actions, next_states)
+        sas_prob = F.softmax(adv_logits + sa_logits, dim=1)
+
+        with torch.no_grad():
+            ratio = (sas_prob[:, 0] * sa_prob[:, 1]) / (sas_prob[:, 1] * sa_prob[:, 0])
+
+        return ratio
 
     def save(self, ckpt_name: str) -> None:
         torch.save(self._agent_module.state_dict(), ckpt_name + '.pth')
