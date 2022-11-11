@@ -296,8 +296,7 @@ class H2OAgent(BaseAgent):
         info['qf2_diff'] = qf2_diff.detach().mean()
         info['sim_qf1_gap'] = sim_qf1_gap.detach().mean()
         info['sim_qf2_gap'] = sim_qf2_gap.detach().mean()
-        if self._cql_lagrange:
-            info['alpha_prime_loss'] = alpha_prime_loss
+        info['alpha_prime_loss'] = alpha_prime_loss.detach().mean()
         
         return q_loss, alpha_prime_loss, info
     
