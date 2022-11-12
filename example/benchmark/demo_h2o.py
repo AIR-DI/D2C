@@ -34,9 +34,9 @@ def main():
     })
 
     config = make_config(command_args)
-    bm_data = Data(config)
-    s_norm = dict(zip(['obs_shift', 'obs_scale'], bm_data.state_shift_scale))
-    data = bm_data.data
+    real_dataset = Data(config)
+    s_norm = dict(zip(['obs_shift', 'obs_scale'], real_dataset.state_shift_scale))
+    data = real_dataset.data
     # The env of the benchmark to be used for policy evaluation.
     env = benchmark_env(config=config, **s_norm)
     # Contains dynamics model to be trained.
