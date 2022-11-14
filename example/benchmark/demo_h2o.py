@@ -37,13 +37,16 @@ def main():
     real_dataset = Data(config)
     s_norm = dict(zip(['obs_shift', 'obs_scale'], real_dataset.state_shift_scale))
     data = real_dataset.data
-    # The env of the benchmark to be used for policy evaluation.
-    env = benchmark_env(config=config, **s_norm)
-    # Contains dynamics model to be trained.
-    lea_env = LeaEnv(config)
-    agent = make_agent(config=config, env=lea_env, data=data)
-    evaluator = bm_eval(agent=agent, env=env, config=config)
-    trainer = Trainer(agent=agent, train_data=data, config=config, env=lea_env, evaluator=evaluator)
+
+    real_env = benchmark_env(config=config, **s_norm)
+    sim_env = LeaEnv(config)
+    
+    # agent with an empty buffer
+    agent = make_agent(config=config, env=sim_env, data=data)
+    # envaluate in the real env
+    evaluator = bm_eval(agent=agent, env=real_env, config=config)
+    # train in the sim env
+    trainer = Trainer(agent=agent, train_data=data, config=config, env=sim_env, evaluator=evaluator)
     trainer.train()
 
 
