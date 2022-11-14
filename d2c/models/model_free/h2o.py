@@ -353,8 +353,7 @@ class H2OAgent(BaseAgent):
         return info
 
     def _optimize_q_alpha_prime(self, batch: Tuple) -> Dict:
-        real_batch, sim_batch = batch
-        q_loss, alpha_prime_loss, info = self._build_q_alpha_prime_loss(real_batch, sim_batch)
+        q_loss, alpha_prime_loss, info = self._build_q_alpha_prime_loss(batch)
         
         self._q_optimizer.zero_grad()
         q_loss.backward()
@@ -388,12 +387,14 @@ class H2OAgent(BaseAgent):
     def _optimize_step(self, batch: Dict) -> Dict:
         info = collections.OrderedDict()
         q_info = self._optimize_q_alpha_prime(batch)
+        d_info = self._optimize_dsa_dsas(batch)
         if self._global_step % self._update_actor_freq == 0:
             self._p_info = self._optimize_p_alpha(batch)
             # Update the target networks.
             self._update_target_fns(self._q_fns, self._q_target_fns)
             self._update_target_fns(self._p_fn, self._p_target_fn)
         info.update(q_info)
+        info.update(d_info)
         info.update(self._p_info)
         return info
 
