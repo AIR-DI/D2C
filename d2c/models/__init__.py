@@ -5,11 +5,13 @@ from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.models.base import BaseAgent
 from d2c.models.model_free.td3_bc import TD3BCAgent
 from d2c.models.model_free.doge import DOGEAgent
+from d2c.models.model_free.h2o import H2OAgent
 
 
 AGENT_MODULES_DICT = {
     'td3_bc': TD3BCAgent,
     'doge': DOGEAgent,
+    'h2o': H2OAgent
 }
 
 
@@ -28,7 +30,7 @@ def get_agent(model_name: str) -> Callable[..., BaseAgent]:
         +------------------+------------------------------------------------+
         |  Planning        |  'mopp'                                        |
         +------------------+------------------------------------------------+
-        |  Model-free RL   |  'td3_bc', 'doge'                              |
+        |  Model-free RL   |  'td3_bc', 'doge', 'h2o'                       |
         +------------------+------------------------------------------------+
         |  Model-based RL  |                                                |
         +------------------+------------------------------------------------+
