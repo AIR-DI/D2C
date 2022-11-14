@@ -4,6 +4,7 @@ Paper: https://arxiv.org/abs/2206.13464.pdf
 """
 import collections
 import torch
+import numpy as np
 import copy
 import torch.nn.functional as F
 from torch import nn, Tensor
@@ -33,7 +34,9 @@ class H2OAgent(BaseAgent):
 
     def __init__(
             self,
-            update_actor_freq: int = 2,
+            update_actor_freq: int = 1,
+            rollout_sim_freq: int = 1000,
+            rollout_sim_num: int = 1000,
             alpha: float = 2.5,
             initial_lambda: float = 5,
             lambda_lr: float = 3e-4,
@@ -61,12 +64,18 @@ class H2OAgent(BaseAgent):
             clip_dynamics_ratio_max: float = 1.0,
             adaptive_weighting_min: float = 1e-45,
             adaptive_weighting_max: float = 10,
+            joint_noise_std: float = 0.0,
+            max_traj_length: int = 1000,
+            
             **kwargs: Any,
     ) -> None:
         self._update_actor_freq = update_actor_freq
+        self._rollout_sim_freq = rollout_sim_freq
+        self._rollout_sim_num = rollout_sim_num
         self._alpha = alpha
         self._initial_lambda = initial_lambda
         self._lambda_lr = lambda_lr
+        
         self._automatic_entropy_tuning = automatic_entropy_tuning
         self._log_alpha_init_value = log_alpha_init_value
         self._log_alpha_prime_init_value = log_alpha_prime_init_value
@@ -74,6 +83,7 @@ class H2OAgent(BaseAgent):
         self._alpha_multiplier = alpha_multiplier
         self._backup_entropy = backup_entropy
         
+        self._cql_target_action_gap = cql_target_action_gap
         self._cql_temp = cql_temp
         self._cql_lagrange = cql_lagrange
         self._cql_clip_diff_min = cql_clip_diff_min
@@ -90,6 +100,8 @@ class H2OAgent(BaseAgent):
         self._clip_dynamics_ratio_max = clip_dynamics_ratio_max
         self._adaptive_weighting_min = adaptive_weighting_min
         self._adaptive_weighting_max = adaptive_weighting_max
+        self._joint_noise_std = joint_noise_std
+        self._max_traj_length = max_traj_length
         self._p_info = collections.OrderedDict()
         super(H2OAgent, self).__init__(**kwargs)
 
@@ -302,7 +314,7 @@ class H2OAgent(BaseAgent):
         
         return q_loss, alpha_prime_loss, info
     
-    def _build_p_alpha_loss(self, batch: Tuple) -> Tuple[Tensor, Dict]:
+    def _build_p_alpha_loss(self, batch: Tuple, bc=False) -> Tuple[Tensor, Dict]:
         real_batch, sim_batch = batch
         real_state = real_batch['s1']
         real_action = real_batch['a1']
@@ -379,6 +391,27 @@ class H2OAgent(BaseAgent):
     
     def _get_train_batch(self) -> Tuple:
         """Samples a batch of transitions from real dataset and sim replay buffer respectively."""
+        # periodically rollout transitions from sim env
+        if self._global_step % self._rollout_sim_freq == 0:
+            self._traj_steps = 0
+            self._current_state = self._env.reset()
+            sampling_policy = self._build_test_policies()
+            for _ in range(self._rollout_sim_num):
+                self._traj_steps += 1
+                state = self._current_state
+                action = sampling_policy(state)
+                if self._joint_noise_std > 0:
+                    next_state, reward, done, __ = self._env.step(action + np.random.randn(action.shape[0],) * self._joint_noise_std)
+                else:
+                    next_state, reward, done, __ = self._env.step(action)
+                    
+                self._empty_dataset.add(state=state, action=action, next_state=next_state, reward=reward, done=done)
+                self._current_state = next_state
+                
+                if done or self._traj_steps >= self._max_traj_length:
+                    self._traj_steps = 0
+                    self._current_state = self._env.reset()
+        
         _real_batch = self._train_data.sample_batch(self._batch_size)
         _sim_batch = self._empty_dataset.sample_batch(self._batch_size)
 
