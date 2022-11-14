@@ -118,6 +118,13 @@ class BaseAgent(ABC):
         _batch = self._train_data.sample_batch(self._batch_size)
 
         return _batch
+    
+    def _get_hybrid_train_batch(self) -> Tuple:
+        """Samples a batch of transitions from real and sim data respectively."""
+        _real_batch = self._train_data.sample_batch(self._batch_size)
+        _sim_batch = self._empty_dataset.sample_batch(self._batch_size)
+
+        return _real_batch, _sim_batch
 
     @abstractmethod
     def _optimize_step(self, batch: Dict):
