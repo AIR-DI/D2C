@@ -141,7 +141,8 @@ class H2OAgent(BaseAgent):
             weight_decay=self._weight_decays,
             )
 
-    def _build_dsa_loss(self, real_batch: Dict, sim_batch: Dict) -> Tuple[Tensor, Dict]:
+    def _build_dsa_dsas_loss(self, batch: Tuple) -> Tuple[Tensor, Dict]:
+        real_batch, sim_batch = batch
         real_state = real_batch['s1']
         real_action = real_batch['a1']
         real_next_state = real_batch['s2']
@@ -168,7 +169,8 @@ class H2OAgent(BaseAgent):
         info['dsas_loss'] = dsas_loss
         return dsa_loss, dsas_loss, info
 
-    def _build_q_alpha_prime_loss(self, , real_batch: Dict, sim_batch: Dict) -> Tuple[Tensor, Dict]:
+    def _build_q_alpha_prime_loss(self, batch: Tuple) -> Tuple[Tensor, Dict]:
+        real_batch, sim_batch = batch
         real_state = real_batch['s1']
         real_action = real_batch['a1']
         real_r = real_batch['reward']
@@ -300,7 +302,8 @@ class H2OAgent(BaseAgent):
         
         return q_loss, alpha_prime_loss, info
     
-    def _build_p_alpha_loss(self, real_batch: Dict, sim_batch: Dict, bc=False) -> Tuple[Tensor, Dict]:
+    def _build_p_alpha_loss(self, batch: Tuple) -> Tuple[Tensor, Dict]:
+        real_batch, sim_batch = batch
         real_state = real_batch['s1']
         real_action = real_batch['a1']
         
@@ -335,7 +338,8 @@ class H2OAgent(BaseAgent):
 
         return p_loss, alpha_loss, info
     
-    def _optimize_p_alpha(self, real_batch: Dict, sim_batch: Dict) -> Dict:
+    def _optimize_p_alpha(self, batch: Tuple) -> Dict:
+        real_batch, sim_batch = batch
         p_loss, alpha_loss, info = self._build_p_alpha_loss(real_batch, sim_batch)
         
         self._q_optimizer.zero_grad()
@@ -348,7 +352,8 @@ class H2OAgent(BaseAgent):
         
         return info
 
-    def _optimize_q_alpha_prime(self, real_batch: Dict, sim_batch: Dict) -> Dict:
+    def _optimize_q_alpha_prime(self, batch: Tuple) -> Dict:
+        real_batch, sim_batch = batch
         q_loss, alpha_prime_loss, info = self._build_q_alpha_prime_loss(real_batch, sim_batch)
         
         self._q_optimizer.zero_grad()
@@ -361,28 +366,30 @@ class H2OAgent(BaseAgent):
         
         return info
 
-    def _optimize_dsa(self, batch: Dict):
-        dsa_loss, info = self._build_dsa_loss(batch)
+    def _optimize_dsa_dsas(self, batch: Tuple) -> Dict:
+        dsa_loss, dsas_loss, info = self._build_dsa_dsas_loss(batch)
+        
         self._dsa_optimizer.zero_grad()
         dsa_loss.backward()
         self._dsa_optimizer.step()
-        return info
-    
-    def _optimize_dsas(self, batch: Dict):
-        dsas_loss, info = self._build_dsas_loss(batch)
+
         self._dsas_optimizer.zero_grad()
         dsas_loss.backward()
         self._dsas_optimizer.step()
         return info
+    
+    def _get_train_batch(self) -> Tuple:
+        """Samples a batch of transitions from real dataset and sim replay buffer respectively."""
+        _real_batch = self._train_data.sample_batch(self._batch_size)
+        _sim_batch = self._empty_dataset.sample_batch(self._batch_size)
+
+        return _real_batch, _sim_batch
 
     def _optimize_step(self, batch: Dict) -> Dict:
         info = collections.OrderedDict()
-        q_info = self._optimize_q(batch)
-        if self._global_step <= self._train_d_steps:
-            distance_info = self._optimize_distance(batch)
-            info.update(distance_info)
+        q_info = self._optimize_q_alpha_prime(batch)
         if self._global_step % self._update_actor_freq == 0:
-            # self._p_info = self._optimize_p_alpha(batch)
+            self._p_info = self._optimize_p_alpha(batch)
             # Update the target networks.
             self._update_target_fns(self._q_fns, self._q_target_fns)
             self._update_target_fns(self._p_fn, self._p_target_fn)
@@ -396,7 +403,7 @@ class H2OAgent(BaseAgent):
         )
         self._test_policies['main'] = policy
         
-    def real_sim_dynacmis_ratio(self, states, actions, next_states):
+    def real_sim_dynacmis_ratio(self, states, actions, next_states) -> float:
         sa_logits = self._dsa_fn(states, actions)
         sa_prob = F.softmax(sa_logits, dim=1)
         adv_logits = self._dsas_fn(states, actions, next_states)
@@ -407,7 +414,7 @@ class H2OAgent(BaseAgent):
 
         return ratio
     
-    def log_sim_real_dynacmis_ratio(self, states, actions, next_states):
+    def log_sim_real_dynacmis_ratio(self, states, actions, next_states) -> float:
         sa_logits = self._dsa_fn(states, actions)
         sa_prob = F.softmax(sa_logits, dim=1)
         adv_logits = self._dsas_fn(states, actions, next_states)
@@ -422,7 +429,7 @@ class H2OAgent(BaseAgent):
         
         return log_ratio
     
-    def kl_sim_divergence(self, states, actions, next_states):
+    def kl_sim_divergence(self, states, actions, next_states) -> float:
         states = torch.repeat_interleave(states, self._sampling_n_next_states, dim=0)
         actions = torch.repeat_interleave(actions, self._sampling_n_next_states, dim=0)
         next_states = torch.repeat_interleave(next_states, self._sampling_n_next_states, dim=0)
