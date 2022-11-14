@@ -39,7 +39,8 @@ def main():
     data = real_dataset.data
 
     real_env = benchmark_env(config=config, **s_norm)
-    sim_env = LeaEnv(config)
+    # TODO modify dynamics
+    sim_env = benchmark_env(config)
     
     # agent with an empty buffer
     agent = make_agent(config=config, env=sim_env, data=data)
