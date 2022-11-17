@@ -35,7 +35,7 @@ Here is an example of TD3+BC. The full script can be found at [example/benchmark
 
 First, a configuration file [model_config.json5](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/config/model_config.json5) which contains all the hyper-parameters of the RL algorithms should be placed in [example/benchmark/config/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/config). Please check this file for detail about the hyper-parameters.
 
-Then, the offline data for the algorithm should be placed in [example/benchmark/data/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/data/). Here, we use the mujoco dataset from D4RL and placed the data files in [example/benchmark/data/d4rl/mujoco/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/data/d4rl/mujoco/).
+Then, the offline data for the algorithm should be placed in [example/benchmark/data/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/data/). Here, we use the mujoco dataset from D4RL([Download link](http://rail.eecs.berkeley.edu/datasets/offline_rl/gym_mujoco_v2/)) and placed the data files in [example/benchmark/data/d4rl/mujoco/](https://gitlab.com/air_rl/algorithms-library/d2c/-/tree/dev/example/benchmark/data/d4rl/mujoco/).
 
 Import some relevant packages:
 ```
