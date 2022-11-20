@@ -12,7 +12,7 @@ setup(
     version='0.0.1',
     packages=find_packages(),
     install_requires=[
-        'gym',
+        'gym==0.23.1',
         'numpy',
         'pandas',
         'torch',
@@ -22,8 +22,9 @@ setup(
         'tensorboard',
         'easydict',
         'h5py',
+        'fire',
     ],
     extras_require={
-        'mujoco': ['mujoco-py']
+        'mujoco': ['mujoco-py==2.1.2.14']
     },
 )
