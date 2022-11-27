@@ -5,11 +5,13 @@ from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.models.base import BaseAgent
 from d2c.models.model_free.td3_bc import TD3BCAgent
 from d2c.models.model_free.doge import DOGEAgent
+from d2c.models.imitation.dmil import DMILAgent
 
 
 AGENT_MODULES_DICT = {
     'td3_bc': TD3BCAgent,
     'doge': DOGEAgent,
+    'dmil': DMILAgent,
 }
 
 

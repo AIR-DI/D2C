@@ -31,7 +31,15 @@
         train_d_steps: 100000,
         N: 20,
       }
-    }
+    },
+    dmil: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {f: [[256, 256],], p: [[256, 256],], d:[[256,256],]},
+        optimizers: {f: ['adam', 3e-4], d: ['adam', 3e-4], p: ['adam', 3e-4]}
+      }
+    },
+
   },
   env: {
     basic_info: {state_dim: null, state_min: null, state_max: null,

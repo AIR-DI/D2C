@@ -114,8 +114,8 @@ class ReplayBuffer:
             action: Union[np.ndarray, torch.Tensor],
             next_state: Union[np.ndarray, torch.Tensor],
             next_action: Union[np.ndarray, torch.Tensor],
-            reward: Union[np.ndarray, torch.Tensor],
-            done: Union[np.ndarray, torch.Tensor],
+            reward: Union[np.ndarray, torch.Tensor] = None,
+            done: Union[np.ndarray, torch.Tensor] = None,
             cost: Union[np.ndarray, torch.Tensor] = None
     ) -> None:
         """Add a batch of transitions into the buffer.
@@ -131,6 +131,10 @@ class ReplayBuffer:
         batch_size = state.shape[0]
         if cost is None:
             cost = torch.zeros(batch_size, dtype=torch.float32, device=self._device)
+        if reward is None:
+            reward = torch.zeros(batch_size, dtype=torch.float32, device=self._device)
+        if done is None:
+            done = torch.zeros(batch_size, dtype=torch.float32, device=self._device)
         transitions = OrderedDict(
             s1=state,
             a1=action,
