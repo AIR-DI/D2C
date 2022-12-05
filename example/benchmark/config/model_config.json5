@@ -35,8 +35,9 @@
     dmil: {
       train_schedule: ['agent'],
       hyper_params: {
-        model_params: {f: [[256, 256],], p: [[256, 256],], d:[[256,256],]},
-        optimizers: {f: ['adam', 3e-4], d: ['adam', 3e-4], p: ['adam', 3e-4]}
+        model_params: {f: [[256, 256],], p: [[256, 256],], d:[[512, 512],]},
+        optimizers: {f: ['adam', 1e-4], p: ['adam', 3e-4], d: ['adam', 1e-4]},
+        rollout_size: null,
       }
     },
 
@@ -64,9 +65,10 @@
     device: 'cuda',
     data_loader_name: null,  // 'app' for real-world application data.
     action_noise: null,  // The std value of the gaussian noise added to the action.
+    data_split_ratio: null, // The ratio for splitting the dataset. It should be in (0, 1].
     train_test_ratio: 0.99,
     batch_size: 64,
-    model_buffer_size: 1000000,
+    model_buffer_size: null,  // The capacity of the empty buffer.
     weight_decays: 0.0,
     update_freq: 1,
     update_rate: 0.005,
@@ -75,7 +77,7 @@
     summary_freq: 100,
     print_freq: 1000,
     save_freq: 10000,
-    eval_freq: 5000,
+    eval_freq: 10000,
     // parameters for model files
     model_dir: 'models',
     behavior_ckpt_name: 'b',
@@ -88,7 +90,7 @@
     wandb: {entity: null, project: null, name: null, reinit: false, mode: 'online'}
   },
   eval: {
-    n_eval_episodes: 20,
+    n_eval_episodes: 10,
     episode_step: 10,
     log_dir: 'eval',
     start: 0.,

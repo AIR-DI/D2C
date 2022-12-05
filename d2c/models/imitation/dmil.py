@@ -4,11 +4,9 @@ Paper: https://arxiv.org/abs/2207.00244
 """
 import collections
 import torch
-import numpy as np
 from torch import nn, Tensor
-from gym.spaces import Box, Space
 from typing import Any, Dict
-from typing import Tuple, List, Union, Type, Optional, Sequence
+from typing import Tuple, Type
 from d2c.models.base import BaseAgent, BaseAgentModule
 from d2c.utils import networks, utils, policies
 
@@ -22,10 +20,11 @@ LAMBDA_MAX = 100
 class DMILAgent(BaseAgent):
     """Implementation of DMIL.
 
-    :param float alpha1:
-    :param float alpha2:
+    :param float alpha1: The hyperparameter alpha for policy.
+    :param float alpha2: The hyperparameter alpha for dynamics model.
     :param float train_f_steps: The total training steps to train the dynamics model.
     :param int rollout_freq: The frequency value for the dynamics model rollout.
+    :param int rollout_size: The size of the rollout data.
 
     .. seealso::
 
@@ -39,6 +38,7 @@ class DMILAgent(BaseAgent):
             alpha2: float = 10,
             train_f_steps: int = int(1e+3),
             rollout_freq: int = 1000,
+            rollout_size: int = None,
             **kwargs: Any,
     ) -> None:
         self._alpha1 = alpha1
@@ -46,7 +46,10 @@ class DMILAgent(BaseAgent):
         self._train_f_steps = train_f_steps
         self._rollout_freq = rollout_freq
         super(DMILAgent, self).__init__(**kwargs)
-        self._rollout_size = int(self._empty_dataset.capacity / 10)
+        if rollout_size is None:
+            self._rollout_size = int(self._train_data.size / 10)
+        else:
+            self._rollout_size = rollout_size
         self._p_info = collections.OrderedDict()
 
     def _build_fns(self) -> None:
@@ -119,9 +122,9 @@ class DMILAgent(BaseAgent):
         a2 = batch2['a1']
         lossf1 = self._f_fn.get_log_density(s1, a1, s12)
         lossf2 = self._f_fn.get_log_density(s2, a2, s22)
-        logpi = self._p_fn.get_log_density(s1, a1)
-        logpi_d = self._p_fn.get_log_density(s2, a2)
         with torch.no_grad():
+            logpi = self._p_fn.get_log_density(s1, a1)
+            logpi_d = self._p_fn.get_log_density(s2, a2)
             output = self._d_fn(s1, a1, logpi, lossf1)
             output = torch.clamp(output, 0.1, 0.9)
             output_d = self._d_fn(s2, a2, logpi_d, lossf2)
@@ -140,12 +143,15 @@ class DMILAgent(BaseAgent):
         s2 = batch2['s1']
         a2 = batch2['a1']
         s22 = batch2['s2']
-        lossf1 = self._f_fn.get_log_density(s1, a1, s12)
-        lossf2 = self._f_fn.get_log_density(s2, a2, s22)
-        logpi = self._p_fn.get_log_density(s1, a1)
-        logpi_d = self._p_fn.get_log_density(s2, a2)
+        with torch.no_grad():
+            lossf1 = self._f_fn.get_log_density(s1, a1, s12)
+            lossf2 = self._f_fn.get_log_density(s2, a2, s22)
+            logpi = self._p_fn.get_log_density(s1, a1)
+            logpi_d = self._p_fn.get_log_density(s2, a2)
         out1 = self._d_fn(s1, a1, logpi, lossf1)
+        out1 = torch.clamp(out1, 0.1, 0.9)
         out2 = self._d_fn(s2, a2, logpi_d, lossf2)
+        out2 = torch.clamp(out2, 0.1, 0.9)
         d_loss = torch.mean(-torch.log(out1)) + torch.mean(-torch.log(1 - out2))
         info = collections.OrderedDict()
         info['d_loss'] = d_loss
@@ -204,14 +210,15 @@ class DMILAgent(BaseAgent):
     def generate_rollout(self, batch: Dict) -> None:
         s1 = batch['s1']
         a1 = batch['a1']
-        s2, _, _ = self._f_fn(s1, a1)
-        a2, _, _ = self._p_fn(s2)
-        s3, _, _ = self._f_fn(s2, a2)
-        a3, _, _ = self._p_fn(s3)
+        with torch.no_grad():
+            s2, _, _ = self._f_fn(s1, a1)
+            a2, _, _ = self._p_fn(s2)
+            s3, _, _ = self._f_fn(s2, a2)
+            a3, _, _ = self._p_fn(s3)
         self._empty_dataset.add_transitions(state=s2, action=a2, next_state=s3, next_action=a3)
 
     def _build_test_policies(self) -> None:
-        policy = policies.DeterministicPolicy(
+        policy = policies.DeterministicSoftPolicy(
             a_network=self._p_fn
         )
         self._test_policies['main'] = policy

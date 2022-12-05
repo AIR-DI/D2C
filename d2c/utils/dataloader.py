@@ -28,7 +28,7 @@ class BaseDataLoader(ABC):
         pass
 
     @abstractmethod
-    def get_transitions(self):
+    def get_transitions(self, **kwargs):
         """Get the transitions from the dataset.
 
         :return: A namedtuple that contains the elements of the transitions.
@@ -39,6 +39,28 @@ class BaseDataLoader(ABC):
     def state_shift_scale(self):
         """Get the shift and scale of the state normalization."""
         pass
+
+    @staticmethod
+    def _split(ratio: float, shuffle: bool = True, *data: np.ndarray) -> List[np.ndarray]:
+        """Split the dataset.
+
+        :param ratio: The split ratio. It should be a float value between (0, 1).
+        :param shuffle: If choosing the data randomly.
+        :param data: A list contains all the data to be split.
+        :return: A List contains all the split data.
+        """
+        assert 0 < ratio <= 1
+        length = data[0].shape[0]
+        if shuffle:
+            indices = np.random.permutation(length)
+            indices = indices[:int(length * ratio)]
+        else:
+            indices = np.arange(int(length * ratio))
+        dataset = [d[indices] for d in data]
+        logging.info('=' * 20 + 'Splitting the dataset.' + '=' * 20 + '\n'
+                     + f'The splitting ratio: {ratio}, the original data size: {length}, '
+                       f'the splitting data size: {dataset[0].shape[0]}. \n')
+        return dataset
 
 
 class AppDataLoader(BaseDataLoader):
@@ -76,12 +98,22 @@ class BaseBMLoader(BaseDataLoader):
     def _load_data(self):
         raise NotImplementedError
 
-    def get_transitions(self) -> OrderedDict:
+    def get_transitions(self, split_ratio: float = None, split_shuffle: bool = True) -> OrderedDict:
         """Get the transitions from the dataset.
 
+        :param float split_ratio: The ratio value for splitting the data.
+        :param bool split_shuffle: If choosing the splitting data randomly.
         :return: A namedtuple that contains the elements of the transitions.
         """
-        demo_s1, demo_a1, demo_s2, demo_a2, demo_r, demo_c, demo_d = self._load_data()
+        dataset = self._load_data()
+        if split_ratio is not None:
+            demo_s1, demo_a1, demo_s2, demo_a2, demo_r, demo_c, demo_d = self._split(
+                split_ratio,
+                split_shuffle,
+                *dataset,
+            )
+        else:
+            demo_s1, demo_a1, demo_s2, demo_a2, demo_r, demo_c, demo_d = dataset
         if self._state_normalize:
             demo_s1, demo_s2, self._obs_shift, self._obs_scale = self.norm_state(demo_s1, demo_s2)
         if self._reward_normalize:

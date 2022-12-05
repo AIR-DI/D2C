@@ -80,8 +80,9 @@ class Data(BaseData):
         app_config = config.app_config
         env_config = config.model_config.env.external
         data_loader_name = config.model_config.train.data_loader_name
+        self._split_ratio = config.model_config.train.data_split_ratio  # Data split ratio
         self._device = config.model_config.train.device
-        if data_loader_name is 'app':  # For real-world application experiments.
+        if data_loader_name == 'app':  # For real-world application experiments.
             try:
                 data_path = app_config.data_path
             except:
@@ -102,7 +103,7 @@ class Data(BaseData):
 
     def _build_data(self) -> None:
         self._build_data_loader()
-        transitions = self._data_loader.get_transitions()
+        transitions = self._data_loader.get_transitions(split_ratio=self._split_ratio)
         s1, a1, s2, a2, reward, cost, done = [transitions[k] for k in transitions.keys()]
         self._buffer_size = s1.shape[0]
         state_dim = s1.shape[-1]

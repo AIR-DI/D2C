@@ -18,24 +18,27 @@ def main():
     command_args = {
         prefix + 'benchmark_name': 'd4rl',
         prefix + 'data_source': 'mujoco',
-        prefix + 'env_name': 'Hopper-v2',
-        prefix + 'data_name': 'hopper_expert-v2',
+        prefix + 'env_name': 'HalfCheetah-v2',
+        prefix + 'data_name': 'halfcheetah_expert-v2',
         prefix + 'state_normalize': True,
         prefix + 'score_normalize': True,
     }
+    split_ratio = 0.05
     command_args.update({
         'model.model_name': 'dmil',
         'train.data_loader_name': None,
+        'train.data_split_ratio': split_ratio,
         'train.device': device,
         'train.seed': 0,
         'train.total_train_steps': 1000000,
         'train.batch_size': 256,
-        'train.agent_ckpt_name': '1127'
+        'train.agent_ckpt_name': '1130',
+        'model.dmil.hyper_params.rollout_size': None,
     })
     wandb = {
         'entity': 'd2c',
-        'project': 'dmil',
-        'name': 'test',
+        'project': 'dmil_test_1201',
+        'name': f'halfcheetah_expert-ratio_{split_ratio}',
         'reinit': False,
         'mode': 'online'
     }

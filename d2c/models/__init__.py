@@ -64,10 +64,15 @@ def make_agent(
     model_name = model_cfg.model.model_name
     agent_config = model_cfg.model[model_name]
     # An empty buffer.
+    if config.model_config.train.model_buffer_size is not None:
+        _max_size = config.model_config.train.model_buffer_size
+    else:
+        _max_size = data.capacity
     model_buffer = ReplayBuffer(
         state_dim=model_cfg.env.basic_info.state_dim,
         action_dim=model_cfg.env.basic_info.action_dim,
-        max_size=config.model_config.train.model_buffer_size
+        max_size=_max_size,
+        device=model_cfg.train.device,
     )
     agent_args = dict(
         env=env,

@@ -42,6 +42,15 @@ class TestData:
         assert scale.shape == (11,)
         print(shift, scale)
 
+        config.model_config.train.data_split_ratio = 0.2
+        split_data = Data(config)
+        split_d = split_data.data
+        assert split_d.size == int(data.size * 0.2)
+        _batch = split_d.sample_batch(64)
+        assert isinstance(_batch['s1'], torch.Tensor)
+        assert _batch['s1'].shape == (64, 11)
+        assert _batch['a1'].shape == (64, 3)
+
     def test_data_noise(self):
         prefix = 'env.external.'
         command_args = {
