@@ -26,7 +26,7 @@ def get_agent(model_name: str) -> Callable[..., BaseAgent]:
         The input name should be in the keys of dict ``AGENT_MODULES_DICT``:
 
         +------------------+------------------------------------------------+
-        |  Imitation       |  'bc',                                         |
+        |  Imitation       |  'bc', 'dmil'                                        |
         +------------------+------------------------------------------------+
         |  Planning        |  'mopp'                                        |
         +------------------+------------------------------------------------+
