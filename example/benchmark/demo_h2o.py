@@ -7,6 +7,7 @@ from d2c.models import make_agent
 from d2c.envs import benchmark_env, LeaEnv
 from d2c.data import Data
 from d2c.evaluators import bm_eval
+from d2c.utils.utils import update_target_env_gravity, update_target_env_friction, update_target_env_density
 from example.benchmark.config import make_config
 
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,8 @@ def main():
         prefix + 'data_source': 'mujoco',
         prefix + 'env_name': 'HalfCheetah-v2',
         prefix + 'data_name': 'halfcheetah_medium_replay-v2',
+        prefix + 'unreal_dynamics': 'gravity',
+        prefix + 'variety_degree': 2.0,
         prefix + 'state_normalize': False,
         prefix + 'score_normalize': True,
     }
@@ -39,8 +42,35 @@ def main():
     data = real_dataset.data
 
     real_env = benchmark_env(config=config, **s_norm)
-    # TODO modify dynamics
+    # # different unreal dynamics properties: gravity; density; friction
+    # for unreal_dynamics in FLAGS.unreal_dynamics.split(";"):
+    #     # different environment: Walker2d-v2, Hopper-v2, HalfCheetah-v2
+    #     for env_name in FLAGS.env_list.split(";"):
+    #         # different varieties: 0.5, 1.5, 2.0, ...
+    #         for variety_degree in FLAGS.variety_list.split(";"):
+    #             variety_degree = float(variety_degree)
+
+    # real_env_name = "{}-{}-v2".format(config.model_config.env env_name.split("-")[0].lower(), FLAGS.data_source).replace('_',"-")
+    real_env_name = config.model_config.env.external.data_name
+    if config.model_config.env.external.unreal_dynamics == "gravity":
+        update_target_env_gravity(config.model_config.env.external.variety_degree, real_env_name)
+    elif config.model_config.env.external.unreal_dynamics == "density":
+        update_target_env_density(config.model_config.env.external.variety_degree, real_env_name)
+    elif config.model_config.env.external.unreal_dynamics == "friction":
+        update_target_env_friction(config.model_config.env.external.variety_degree, real_env_name)
+    else:
+        raise RuntimeError("Got erroneous unreal dynamics %s" % config.model_config.env.external.unreal_dynamics)
     sim_env = benchmark_env(config)
+    if config.model_config.env.external.unreal_dynamics == "gravity":
+        update_target_env_gravity(1, real_env_name)
+    elif config.model_config.env.external.unreal_dynamics == "density":
+        update_target_env_density(1, real_env_name)
+    elif config.model_config.env.external.unreal_dynamics == "friction":
+        update_target_env_friction(1, real_env_name)
+    else:
+        raise RuntimeError("Got erroneous unreal dynamics %s" % config.model_config.env.external.unreal_dynamics)
+    print("\n-------------Env name: {}, variety: {}, unreal_dynamics: {}-------------".format(config.model_config.env.external.env_name, config.model_config.env.external.variety_degree, config.model_config.env.external.unreal_dynamics))
+
     
     # agent with an empty buffer
     agent = make_agent(config=config, env=sim_env, data=data)
