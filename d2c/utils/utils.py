@@ -35,7 +35,6 @@ def get_optimizer(name):
 # generate xml assets path: gym_xml_path
 def generate_xml_path():
     import os
-
     import gym
     xml_path = os.path.join(gym.__file__[:-11], 'envs/mujoco/assets')
 
@@ -70,23 +69,23 @@ def parse_xml_name(env_name):
     return xml_name
 
 
-def update_source_env(env_name):
+def update_target_env(env_name):
     xml_name = parse_xml_name(env_name)
 
     os.system(
-        'cp ./xml_path/source_file/{0} {1}/{0}'.format(xml_name, gym_xml_path))
+        'cp xml_path/target_file/{0} {1}/{0}'.format(xml_name, gym_xml_path))
 
     time.sleep(0.2)
 
 # change gravity
-def update_target_env_gravity(variety_degree, env_name):
+def update_source_env_gravity(variety_degree, env_name):
     old_xml_name = parse_xml_name(env_name)
     # create new xml 
     xml_name = "{}_gravityx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
 
-    with open('../xml_path/source_file/{}'.format(old_xml_name), "r+") as f:
+    with open('xml_path/target_file/{}'.format(old_xml_name), "r+") as f:
 
-        new_f = open('../xml_path/target_file/{}'.format(xml_name), "w+")
+        new_f = open('xml_path/source_file/{}'.format(xml_name), "w+")
         for line in f.readlines():
             if "gravity" in line:
                 pattern = re.compile(r"gravity=\"(.*?)\"")
@@ -108,19 +107,19 @@ def update_target_env_gravity(variety_degree, env_name):
 
     # replace the default gym env with newly-revised env
     os.system(
-        'cp ../xml_path/target_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
+        'cp xml_path/source_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
 
     time.sleep(0.2)
 
 # change density
-def update_target_env_density(variety_degree, env_name):
+def update_source_env_density(variety_degree, env_name):
     old_xml_name = parse_xml_name(env_name)
     # create new xml 
     xml_name = "{}_densityx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
 
-    with open('../xml_path/source_file/{}'.format(old_xml_name), "r+") as f:
+    with open('xml_path/target_file/{}'.format(old_xml_name), "r+") as f:
 
-        new_f = open('../xml_path/target_file/{}'.format(xml_name), "w")
+        new_f = open('xml_path/source_file/{}'.format(xml_name), "w")
         for line in f.readlines():
             if "density" in line:
                 pattern = re.compile(r'(?<=density=")\d+\.?\d*')
@@ -137,19 +136,19 @@ def update_target_env_density(variety_degree, env_name):
 
     # replace the default gym env with newly-revised env
     os.system(
-        'cp ../xml_path/target_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
+        'cp xml_path/source_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
 
     time.sleep(0.2)
 
 # change friction
-def update_target_env_friction(variety_degree, env_name):
+def update_source_env_friction(variety_degree, env_name):
     old_xml_name = parse_xml_name(env_name)
     # create new xml 
     xml_name = "{}_frictionx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
 
-    with open('../xml_path/source_file/{}'.format(old_xml_name), "r+") as f:
+    with open('xml_path/target_file/{}'.format(old_xml_name), "r+") as f:
 
-        new_f = open('../xml_path/target_file/{}'.format(xml_name), "w")
+        new_f = open('xml_path/source_file/{}'.format(xml_name), "w")
         for line in f.readlines():
             if "friction" in line:
                 pattern = re.compile(r"friction=\"(.*?)\"")
@@ -171,37 +170,9 @@ def update_target_env_friction(variety_degree, env_name):
 
     # replace the default gym env with newly-revised env
     os.system(
-        'cp ../xml_path/target_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
+        'cp xml_path/source_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
 
     time.sleep(0.2)
-    
-def get_new_gravity_env(variety, env_name):
-    update_target_env_gravity(variety, env_name)
-    env = gym.make(env_name)
-
-    return env
-
-
-def get_source_env(env_name="Walker2d-v2"):
-    update_source_env(env_name)
-    env = gym.make(env_name)
-
-    return env
-
-
-def get_new_density_env(variety, env_name):
-    update_target_env_density(variety, env_name)
-    env = gym.make(env_name)
-
-    return env
-
-
-def get_new_friction_env(variety, env_name):
-    update_target_env_friction(variety, env_name)
-    env = gym.make(env_name)
-
-    return env
-
 
 
 class Flags(object):
