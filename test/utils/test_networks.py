@@ -2,7 +2,7 @@ import pytest
 import torch
 import numpy as np
 from gym.spaces import Box
-from d2c.utils.networks import ActorNetwork, ActorNetworkDet, CriticNetwork, MLP
+from d2c.utils.networks import ActorNetwork, ActorNetworkDet, CriticNetwork, MLP, Discriminator, ProbDynamicsNetwork
 
 
 class TestNet:
@@ -85,6 +85,51 @@ class TestNet:
         for s in [self.s1, self.s2]:
             a = mlp(s)
             assert a.shape == (self.batch_size, self.a_dim)
+
+    def test_prob_dynamics(self):
+        dynamics = ProbDynamicsNetwork(
+            self.obs_space,
+            self.act_space,
+            self.layer,
+            self.device,
+        ).to(self.device)
+        for s, a in zip([self.s1, self.s2], [self.a1, self.a2]):
+            mean, sample, dist = dynamics(s, a)
+            assert mean.shape == (self.batch_size, self.s_dim)
+            assert sample.shape == (self.batch_size, self.s_dim)
+            assert dist.sample().shape == (self.batch_size, self.s_dim)
+
+        for s, a in zip([self.s1, self.s2], [self.a1, self.a2]):
+            log_density = dynamics.get_log_density(s, a, s)
+            assert log_density.shape == (self.batch_size, self.s_dim)
+
+    def test_discriminator(self):
+        disc = Discriminator(
+            self.obs_space,
+            self.act_space,
+            self.layer,
+            self.device,
+        ).to(self.device)
+
+        actor = ActorNetwork(
+            observation_space=self.obs_space,
+            action_space=self.act_space,
+            fc_layer_params=self.layer,
+            device=self.device,
+        ).to(self.device)
+
+        dynamics = ProbDynamicsNetwork(
+            self.obs_space,
+            self.act_space,
+            self.layer,
+            self.device,
+        ).to(self.device)
+
+        for s, a in zip([self.s1, self.s2], [self.a1, self.a2]):
+            log1 = actor.get_log_density(s, a)
+            log2 = dynamics.get_log_density(s, a, s)
+            out = disc(s, a, log1, log2)
+            assert out.shape == (self.batch_size,)
 
 
 if __name__ == '__main__':

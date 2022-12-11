@@ -2,6 +2,7 @@
 
 import os
 import json5
+import logging
 import importlib
 import numpy as np
 from easydict import EasyDict
@@ -105,8 +106,8 @@ class ConfigBuilder:
         self._update_env_info()
         # create all the models saving paths
         self._update_model_dir()
-        print('=' * 10 + 'The config of this experiment' + '=' * 10)
-        print(json5.dumps(self._model_cfg, indent=2, ensure_ascii=False))
+        logging.debug('=' * 20 + 'The config of this experiment' + '=' * 20)
+        logging.debug(json5.dumps(self._model_cfg, indent=2, ensure_ascii=False))
 
     def build_config(self) -> Flags:
         """The API to build the final config."""
@@ -137,7 +138,7 @@ class ConfigBuilder:
         for k in train_params:
             _dict.update({k: _model_cfg.train[k]})
 
-        print('='*10 + 'The main hyperparameters of this experiment' + '='*10)
+        print('='*20 + 'The main hyperparameters of this experiment' + '='*20)
         print(json5.dumps(_dict, indent=2, ensure_ascii=False))
 
         return _dict

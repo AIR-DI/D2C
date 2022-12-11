@@ -5,11 +5,13 @@ from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.models.base import BaseAgent
 from d2c.models.model_free.td3_bc import TD3BCAgent
 from d2c.models.model_free.doge import DOGEAgent
+from d2c.models.imitation.dmil import DMILAgent
 
 
 AGENT_MODULES_DICT = {
     'td3_bc': TD3BCAgent,
     'doge': DOGEAgent,
+    'dmil': DMILAgent,
 }
 
 
@@ -24,7 +26,7 @@ def get_agent(model_name: str) -> Callable[..., BaseAgent]:
         The input name should be in the keys of dict ``AGENT_MODULES_DICT``:
 
         +------------------+------------------------------------------------+
-        |  Imitation       |  'bc',                                         |
+        |  Imitation       |  'bc', 'dmil'                                        |
         +------------------+------------------------------------------------+
         |  Planning        |  'mopp'                                        |
         +------------------+------------------------------------------------+
@@ -62,10 +64,15 @@ def make_agent(
     model_name = model_cfg.model.model_name
     agent_config = model_cfg.model[model_name]
     # An empty buffer.
+    if config.model_config.train.model_buffer_size is not None:
+        _max_size = config.model_config.train.model_buffer_size
+    else:
+        _max_size = data.capacity
     model_buffer = ReplayBuffer(
         state_dim=model_cfg.env.basic_info.state_dim,
         action_dim=model_cfg.env.basic_info.action_dim,
-        max_size=config.model_config.train.model_buffer_size
+        max_size=_max_size,
+        device=model_cfg.train.device,
     )
     agent_args = dict(
         env=env,

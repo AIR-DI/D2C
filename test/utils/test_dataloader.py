@@ -21,6 +21,13 @@ class TestDataLoader:
         for s in s_shift_sacle:
             assert s.shape == (11,)
 
+        split_ratio = 0.2
+        data_split = dl.get_transitions(split_ratio)
+        assert data_split['s1'].shape[1] == 11
+        assert data_split['a1'].shape[1] == 3
+        assert data_split['s1'].shape[0] == int(data['s1'].shape[0] * split_ratio)
+        assert data_split['a1'].shape[0] == int(data['a1'].shape[0] * split_ratio)
+
 
 if __name__ == '__main__':
     pytest.main(__file__)
