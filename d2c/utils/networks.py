@@ -263,12 +263,12 @@ class Discriminator(nn.Module):
         hidden_sizes = [input_dim] + list(fc_layer_params)
         for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):
             self._layers += miniblock(in_dim, out_dim, None, nn.ReLU)
-        self._layers += miniblock(hidden_sizes[-1], output_dim, None, 2 * torch.tanh())
+        self._layers += miniblock(hidden_sizes[-1], output_dim, None, nn.Tanh)
         self._model = nn.Sequential(*self._layers)
 
     def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
         inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
-        return self._model(inputs)
+        return self._model(inputs) * 2
     
 class ConcatDiscriminator(Discriminator):
     """  Concatenate inputs along dimension and then pass through MLP.
