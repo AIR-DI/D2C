@@ -39,8 +39,6 @@
         optimizers: {q: ['adam', 3e-4], p: ['adam', 3e-4], dsa: ['adam', 3e-4], dsas: ['adam', 3e-4], alpha: ['adam', 3e-4], alpha_prime: ['adam', 3e-4]},
         alpha: 0.01,
         lambda_lr: 0.0003,
-        train_d_steps: 100000,
-        N: 20,
       }
     }
   },
