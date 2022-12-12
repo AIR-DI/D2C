@@ -295,10 +295,12 @@ class Scalar(nn.Module):
     def __init__(
         self, 
         init_value: float,
+        device: Union[str, int, torch.device] = 'cpu'
     ) -> None:
         super().__init__()
+        self._device = device
         self.constant = nn.Parameter(
-            torch.tensor(init_value, dtype=torch.float32)
+            torch.tensor(init_value, dtype=torch.float32).to(self._device)
         )
 
     def forward(self) -> Tensor:
