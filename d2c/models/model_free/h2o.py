@@ -528,22 +528,25 @@ class H2OAgent(BaseAgent):
             dsas_net_factory=dsas_net_factory,
             n_q_fns=n_q_fns,
             device=self._device,
+            automatic_entropy_tuning=self._automatic_entropy_tuning,
+            cql_lagrange=self._cql_lagrange
         )
         
         if self._automatic_entropy_tuning:
             def log_alpha_net_factory():
                 return networks.Scalar(
-                    init_value=self._log_alpha_init_value
+                    init_value=self._log_alpha_init_value,
+                    device=self._device
                 )
-            setattr(utils.Flags, "log_alpha_net_factory", log_alpha_net_factory)
+            setattr(utils.Flags, "log_alpha_net_factory", log_alpha_net_factory())
             
         if self._cql_lagrange:
             def log_alpha_prime_net_factory():
                 return networks.Scalar(
-                    init_value=self._log_alpha_prime_init_value
+                    init_value=self._log_alpha_prime_init_value,
+                    device=self._device
                 )
-            setattr(utils.Flags, "log_alpha_prime_net_factory", log_alpha_prime_net_factory)
-            
+            setattr(utils.Flags, "log_alpha_prime_net_factory", log_alpha_prime_net_factory())
         return modules
 
 
@@ -551,6 +554,8 @@ class AgentModule(BaseAgentModule):
 
     def _build_modules(self) -> None:
         device = self._net_modules.device
+        automatic_entropy_tuning = self._net_modules.automatic_entropy_tuning
+        cql_lagrange = self._net_modules.cql_lagrange
         self._q_nets = nn.ModuleList()
         n_q_fns = self._net_modules.n_q_fns  # The number of the Q nets.
         for _ in range(n_q_fns):
@@ -560,10 +565,10 @@ class AgentModule(BaseAgentModule):
         self._p_target_net = copy.deepcopy(self._p_net)
         self._dsa_net = self._net_modules.dsa_net_factory().to(device)
         self._dsas_net = self._net_modules.dsas_net_factory().to(device)
-        if self._automatic_entropy_tuning:
-            self._log_alpha_net = self._net_modules.log_alpha_net_factory()
-        if self._cql_lagrange:
-            self._log_alpha_prime_net = self._net_modules.log_alpha_prime_net_factory()
+        if automatic_entropy_tuning:
+            self._log_alpha_net = self._net_modules.log_alpha_net_factory().to(device)
+        if cql_lagrange:
+            self._log_alpha_prime_net = self._net_modules.log_alpha_prime_net_factory().to(device)
     
     @property
     def q_nets(self) -> nn.ModuleList:
