@@ -25,7 +25,6 @@ class H2OAgent(BaseAgent):
     :param int N: the number of noise samples to train distance function
     :param float initial_lambda: the value of initial Lagrangian multiplier
     :param float lambda_lr: the update step size of Lagrangian multiplier
-    :param float train_d_steps: the total training steps to train distance function
     .. seealso::
 
         Please refer to :class:`~d2c.models.base.BaseAgent` for more detailed
@@ -117,6 +116,9 @@ class H2OAgent(BaseAgent):
             self._log_alpha_fn = self._agent_module.log_alpha_net
         if self._cql_lagrange:
             self._log_alpha_prime_fn = self._agent_module.log_alpha_prime_net
+            
+    def _init_vars(self) -> None:
+        pass
 
     def _build_optimizers(self) -> None:
         opts = self._optimizers
@@ -505,7 +507,7 @@ class H2OAgent(BaseAgent):
 
         def dsa_net_factory():
             return networks.ConcatDiscriminator(
-                input_dim=self._observation_space + self._action_space,
+                input_dim=self._observation_space.shape[0] + self._action_space.shape[0],
                 output_dim=2,
                 fc_layer_params=model_params_dsa,
                 device=self._device,
@@ -513,7 +515,7 @@ class H2OAgent(BaseAgent):
             
         def dsas_net_factory():
             return networks.ConcatDiscriminator(
-                input_dim=2 * self._observation_space + self._action_space,
+                input_dim=2 * self._observation_space.shape[0] + self._action_space.shape[0],
                 output_dim=2,
                 fc_layer_params=model_params_dsas,
                 device=self._device,
