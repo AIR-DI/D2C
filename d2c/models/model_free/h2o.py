@@ -520,6 +520,18 @@ class H2OAgent(BaseAgent):
                 fc_layer_params=model_params_dsas,
                 device=self._device,
             )
+            
+        def log_alpha_net_factory():
+            return networks.Scalar(
+                init_value=self._log_alpha_init_value,
+                device=self._device
+            )
+
+        def log_alpha_prime_net_factory():
+            return networks.Scalar(
+                init_value=self._log_alpha_prime_init_value,
+                device=self._device
+            )
         
         modules = utils.Flags(
             q_net_factory=q_net_factory,
@@ -527,26 +539,28 @@ class H2OAgent(BaseAgent):
             dsa_net_factory=dsa_net_factory,
             dsas_net_factory=dsas_net_factory,
             n_q_fns=n_q_fns,
+            log_alpha_net_factory=log_alpha_net_factory,
+            log_alpha_prime_net_factory=log_alpha_prime_net_factory,
             device=self._device,
             automatic_entropy_tuning=self._automatic_entropy_tuning,
             cql_lagrange=self._cql_lagrange
         )
         
-        if self._automatic_entropy_tuning:
-            def log_alpha_net_factory():
-                return networks.Scalar(
-                    init_value=self._log_alpha_init_value,
-                    device=self._device
-                )
-            setattr(utils.Flags, "log_alpha_net_factory", log_alpha_net_factory())
+        # if self._automatic_entropy_tuning:
+        #     def log_alpha_net_factory():
+        #         return networks.Scalar(
+        #             init_value=self._log_alpha_init_value,
+        #             device=self._device
+        #         )
+        #     setattr(utils.Flags, "log_alpha_net_factory", log_alpha_net_factory())
             
-        if self._cql_lagrange:
-            def log_alpha_prime_net_factory():
-                return networks.Scalar(
-                    init_value=self._log_alpha_prime_init_value,
-                    device=self._device
-                )
-            setattr(utils.Flags, "log_alpha_prime_net_factory", log_alpha_prime_net_factory())
+        # if self._cql_lagrange:
+        #     def log_alpha_prime_net_factory():
+        #         return networks.Scalar(
+        #             init_value=self._log_alpha_prime_init_value,
+        #             device=self._device
+        #         )
+        #     setattr(utils.Flags, "log_alpha_prime_net_factory", log_alpha_prime_net_factory())
         return modules
 
 

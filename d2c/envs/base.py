@@ -65,8 +65,7 @@ class BaseEnv(gym.Env, ABC):
         return_info: bool = False,
         options: Optional[dict] = None,
     ) -> Union[ObsType, Tuple[ObsType, dict]]:
-        """Resets the environment to an initial state and returns an initial
-        observation.
+        """Resets the environment to an initial state and returns an initial observation.
 
         This method should also reset the environment's random number
         generator(s) if `seed` is an integer or if the environment has not
