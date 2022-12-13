@@ -11,6 +11,7 @@ from torch import nn, Tensor
 from typing import Union, Tuple, Any, Sequence, Dict, Iterator
 from d2c.models.base import BaseAgent, BaseAgentModule
 from d2c.utils import networks, utils, policies
+import pdb
 
 LAMBDA_MIN = 1
 LAMBDA_MAX = 100
@@ -219,6 +220,7 @@ class H2OAgent(BaseAgent):
             sim_target_q_values = sim_target_q_values - self.alpha * sim_next_log_pi
             
         real_td_target = real_r + real_dsc * self._discount * real_target_q_values
+        pdb.set_trace()
         sim_td_target = sim_r + sim_dsc * self._discount * sim_target_q_values
 
         real_qf1_loss = F.mse_loss(real_q1_pred, real_td_target)
@@ -406,7 +408,7 @@ class H2OAgent(BaseAgent):
                 else:
                     next_state, reward, done, __ = self._env.step(action)
                     
-                self._empty_dataset.add(state=state, action=action, next_state=next_state, reward=reward, done=done)
+                self._empty_dataset.add(state=state, action=action, next_state=next_state, next_action=0, reward=reward, done=done)
                 self._current_state = next_state
                 
                 if done or self._traj_steps >= self._max_traj_length:
