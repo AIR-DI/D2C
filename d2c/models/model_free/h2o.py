@@ -397,11 +397,10 @@ class H2OAgent(BaseAgent):
         if self._global_step % self._rollout_sim_freq == 0:
             self._traj_steps = 0
             self._current_state = self._env.reset()
-            sampling_policy = self._build_test_policies()
             for _ in range(self._rollout_sim_num):
                 self._traj_steps += 1
                 state = self._current_state
-                action = sampling_policy(state)
+                action, _, _ = self._p_fn(state)
                 if self._joint_noise_std > 0:
                     next_state, reward, done, __ = self._env.step(action + np.random.randn(action.shape[0],) * self._joint_noise_std)
                 else:
@@ -546,21 +545,6 @@ class H2OAgent(BaseAgent):
             cql_lagrange=self._cql_lagrange
         )
         
-        # if self._automatic_entropy_tuning:
-        #     def log_alpha_net_factory():
-        #         return networks.Scalar(
-        #             init_value=self._log_alpha_init_value,
-        #             device=self._device
-        #         )
-        #     setattr(utils.Flags, "log_alpha_net_factory", log_alpha_net_factory())
-            
-        # if self._cql_lagrange:
-        #     def log_alpha_prime_net_factory():
-        #         return networks.Scalar(
-        #             init_value=self._log_alpha_prime_init_value,
-        #             device=self._device
-        #         )
-        #     setattr(utils.Flags, "log_alpha_prime_net_factory", log_alpha_prime_net_factory())
         return modules
 
 
