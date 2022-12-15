@@ -393,10 +393,11 @@ class H2OAgent(BaseAgent):
         
         self._dsa_optimizer.zero_grad()
         dsa_loss.backward(retain_graph=True)
-        self._dsa_optimizer.step()
         
         self._dsas_optimizer.zero_grad()
         dsas_loss.backward()
+        
+        self._dsa_optimizer.step()
         self._dsas_optimizer.step()
         return info
     
