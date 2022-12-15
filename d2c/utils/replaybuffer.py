@@ -161,15 +161,18 @@ class ReplayBuffer:
     @property
     def normalize_states(self, eps=1e-3):
         # STATE: standard normalization
-        self.state_mean = self.state.mean(0, keepdims=True)
-        self.state_std = self.state.std(0, keepdims=True) + eps
+        self.state_mean = self._state.mean(0, keepdims=True)
+        self.state_std = self._state.std(0, keepdims=True) + eps
         if self.scale_state:
             self.state = (self.state - self.state_mean) / self.state_std
             self.next_state = (self.next_state - self.state_mean) / self.state_std
     
     @property
     def get_mean_std(self):
-        return torch.FloatTensor(self.state_mean).to(self._device), torch.FloatTensor(self.state_std).to(self._device)
+        self.state_mean = self._state.mean(0, keepdims=True)
+        self.state_std = self._state.std(0, keepdims=True)
+        return self.state_mean, self.state_std
+        # return torch.FloatTensor(self.state_mean).to(self._device), torch.FloatTensor(self.state_std).to(self._device)
 
     @property
     def data(self) -> OrderedDict:
