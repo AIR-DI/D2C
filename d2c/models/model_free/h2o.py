@@ -4,6 +4,7 @@ Paper: https://arxiv.org/abs/2206.13464.pdf
 """
 import collections
 import torch
+from tqdm import trange
 import numpy as np
 import copy
 import torch.nn.functional as F
@@ -104,6 +105,8 @@ class H2OAgent(BaseAgent):
         self._max_traj_length = max_traj_length
         self._p_info = collections.OrderedDict()
         super(H2OAgent, self).__init__(**kwargs)
+        
+        self.mean, self.std = self._train_data.get_mean_std
 
     def _build_fns(self) -> None:
         self._agent_module = AgentModule(modules=self._modules)
@@ -220,7 +223,6 @@ class H2OAgent(BaseAgent):
             sim_target_q_values = sim_target_q_values - self.alpha * sim_next_log_pi
             
         real_td_target = real_r + real_dsc * self._discount * real_target_q_values
-        pdb.set_trace()
         sim_td_target = sim_r + sim_dsc * self._discount * sim_target_q_values
 
         real_qf1_loss = F.mse_loss(real_q1_pred, real_td_target)
@@ -253,7 +255,7 @@ class H2OAgent(BaseAgent):
                 
             std_omega = omega.std()
             
-            if self.config.use_variant:
+            if self._use_variant:
                 sim_qf1_gap = (omega * sim_q1_pred).sum()
                 sim_qf2_gap = (omega * sim_q2_pred).sum()
             else:
@@ -350,9 +352,12 @@ class H2OAgent(BaseAgent):
 
         info = collections.OrderedDict()
         info['actor_loss'] = p_loss
-        info['alpha_loss'] = alpha_loss
-
-        return p_loss, alpha_loss, info
+        if self._automatic_entropy_tuning:
+            info['alpha_loss'] = alpha_loss
+            pdb.set_trace()
+            return p_loss, alpha_loss, info
+        else:
+            return p_loss, 0, info
     
     def _optimize_p_alpha(self, batch: Tuple) -> Dict:
         real_batch, sim_batch = batch
@@ -362,9 +367,10 @@ class H2OAgent(BaseAgent):
         p_loss.backward()
         self._q_optimizer.step()
         
-        self._alpha_optimizer.zero_grad()
-        alpha_loss.backward()
-        self._alpha_optimizer.step()
+        if self._automatic_entropy_tuning:
+            self._alpha_optimizer.zero_grad()
+            alpha_loss.backward()
+            self._alpha_optimizer.step()
         
         return info
 
@@ -375,9 +381,10 @@ class H2OAgent(BaseAgent):
         q_loss.backward()
         self._q_optimizer.step()
         
-        self._alpha_prime_optimizer.zero_grad()
-        alpha_prime_loss.backward()
-        self._alpha_prime_optimizer.step()
+        if self._cql_lagrange:
+            self._alpha_prime_optimizer.zero_grad()
+            alpha_prime_loss.backward(retain_graph=True)
+            self._alpha_prime_optimizer.step()
         
         return info
 
@@ -385,21 +392,21 @@ class H2OAgent(BaseAgent):
         dsa_loss, dsas_loss, info = self._build_dsa_dsas_loss(batch)
         
         self._dsa_optimizer.zero_grad()
-        dsa_loss.backward()
+        dsa_loss.backward(retain_graph=True)
         self._dsa_optimizer.step()
-
+        
         self._dsas_optimizer.zero_grad()
         dsas_loss.backward()
         self._dsas_optimizer.step()
         return info
     
     def _get_train_batch(self) -> Tuple:
-        """Samples a batch of transitions from real dataset and sim replay buffer respectively."""
+        """Sample two batches of transitions from real dataset and sim replay buffer respectively."""
         # periodically rollout transitions from sim env
         if self._global_step % self._rollout_sim_freq == 0:
             self._traj_steps = 0
             self._current_state = self._env.reset()
-            for _ in range(self._rollout_sim_num):
+            for _ in trange(self._rollout_sim_num):
                 self._traj_steps += 1
                 state = self._current_state
                 action, _, _ = self._p_fn(state)
