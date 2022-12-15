@@ -42,15 +42,6 @@ def main():
     data = real_dataset.data
 
     real_env = benchmark_env(config=config, **s_norm)
-    # # different unreal dynamics properties: gravity; density; friction
-    # for unreal_dynamics in FLAGS.unreal_dynamics.split(";"):
-    #     # different environment: Walker2d-v2, Hopper-v2, HalfCheetah-v2
-    #     for env_name in FLAGS.env_list.split(";"):
-    #         # different varieties: 0.5, 1.5, 2.0, ...
-    #         for variety_degree in FLAGS.variety_list.split(";"):
-    #             variety_degree = float(variety_degree)
-
-    # real_env_name = "{}-{}-v2".format(config.model_config.env env_name.split("-")[0].lower(), FLAGS.data_source).replace('_',"-")
     real_env_name = config.model_config.env.external.data_name
     if config.model_config.env.external.unreal_dynamics == "gravity":
         update_source_env_gravity(config.model_config.env.external.variety_degree, real_env_name)
