@@ -317,8 +317,11 @@ class H2OAgent(BaseAgent):
         info['sim_qf1_gap'] = sim_qf1_gap.detach().mean()
         info['sim_qf2_gap'] = sim_qf2_gap.detach().mean()
         info['alpha_prime_loss'] = alpha_prime_loss.detach().mean()
-        
-        return q_loss, alpha_prime_loss, info
+        if self._cql_lagrange:
+            info['alpha_prime_loss'] = alpha_prime_loss
+            return q_loss, alpha_prime_loss, info
+        else:
+            return q_loss, 0, info
     
     def _build_p_alpha_loss(self, batch: Tuple, bc=False) -> Tuple[Tensor, Dict]:
         real_batch, sim_batch = batch
@@ -348,20 +351,18 @@ class H2OAgent(BaseAgent):
                 self._q_fns[0](df_state, df_new_action),
                 self._q_fns[1](df_state, df_new_action),
             )
-            p_loss = (self.alpha * df_log_pi - q_new_action).mean() 
+            p_loss = (self.alpha * df_log_pi.sum(dim=-1) - q_new_action).mean() 
 
         info = collections.OrderedDict()
         info['actor_loss'] = p_loss
         if self._automatic_entropy_tuning:
             info['alpha_loss'] = alpha_loss
-            pdb.set_trace()
             return p_loss, alpha_loss, info
         else:
             return p_loss, 0, info
     
     def _optimize_p_alpha(self, batch: Tuple) -> Dict:
-        real_batch, sim_batch = batch
-        p_loss, alpha_loss, info = self._build_p_alpha_loss(real_batch, sim_batch)
+        p_loss, alpha_loss, info = self._build_p_alpha_loss(batch)
         
         self._q_optimizer.zero_grad()
         p_loss.backward()
@@ -405,23 +406,24 @@ class H2OAgent(BaseAgent):
         """Sample two batches of transitions from real dataset and sim replay buffer respectively."""
         # periodically rollout transitions from sim env
         if self._global_step % self._rollout_sim_freq == 0:
-            self._traj_steps = 0
-            self._current_state = self._env.reset()
-            for _ in trange(self._rollout_sim_num):
-                self._traj_steps += 1
-                state = self._current_state
-                action, _, _ = self._p_fn(state)
-                if self._joint_noise_std > 0:
-                    next_state, reward, done, __ = self._env.step(action + np.random.randn(action.shape[0],) * self._joint_noise_std)
-                else:
-                    next_state, reward, done, __ = self._env.step(action)
+            with torch.no_grad():
+                self._traj_steps = 0
+                self._current_state = self._env.reset()
+                for _ in trange(self._rollout_sim_num):
+                    self._traj_steps += 1
+                    state = self._current_state
+                    action, _, _ = self._p_fn(state)
+                    if self._joint_noise_std > 0:
+                        next_state, reward, done, __ = self._env.step(action + np.random.randn(action.shape[0],) * self._joint_noise_std)
+                    else:
+                        next_state, reward, done, __ = self._env.step(action)
+                        
+                    self._empty_dataset.add(state=state, action=action, next_state=next_state, next_action=0, reward=reward, done=done)
+                    self._current_state = next_state
                     
-                self._empty_dataset.add(state=state, action=action, next_state=next_state, next_action=0, reward=reward, done=done)
-                self._current_state = next_state
-                
-                if done or self._traj_steps >= self._max_traj_length:
-                    self._traj_steps = 0
-                    self._current_state = self._env.reset()
+                    if done or self._traj_steps >= self._max_traj_length:
+                        self._traj_steps = 0
+                        self._current_state = self._env.reset()
         
         _real_batch = self._train_data.sample_batch(self._batch_size)
         _sim_batch = self._empty_dataset.sample_batch(self._batch_size)
