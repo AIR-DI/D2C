@@ -445,7 +445,7 @@ class H2OAgent(BaseAgent):
         return info
 
     def _build_test_policies(self) -> None:
-        policy = policies.DeterministicPolicy(
+        policy = policies.DeterministicSoftPolicy(
             a_network=self._p_fn
         )
         self._test_policies['main'] = policy
