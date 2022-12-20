@@ -8,6 +8,8 @@ example/benchmark/data/d4rl/datasets/
 __pycache__
 .idea
 /test/utils/tmp/*
+/test/utils/temp/*
+/test/data/temp/*
 /test/evaluators/sim/temp/*
 /test/models/model_free/temp/*
 /test/trainers/temp/*

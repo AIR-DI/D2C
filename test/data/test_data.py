@@ -128,6 +128,36 @@ class TestData:
         assert data.size == (int(data1.size * data_files[-1][0])
                              + int(data2.size * data_files[-1][1]))
 
+    def test_data_app(self):
+        command_args = {}
+        command_args.update({'train.data_loader_name': 'app',
+                             'train.device': 'cpu'})
+        app_config.data_path = './temp/cold_source-low-free-unit_num_1.csv'
+        app_config.state_indices = np.arange(0, 9)
+        app_config.action_indices = np.arange(9, 11)
+        cfg_builder = ConfigBuilder(
+            app_config=app_config,
+            model_config_path=self.model_config_path,
+            work_abs_dir=self.work_abs_dir,
+            command_args=command_args,
+        )
+        config = cfg_builder.build_config()
+        app_data = Data(config)
+        data = app_data.data
+        _batch = data.sample_batch(64)
+        assert isinstance(_batch['s1'], torch.Tensor)
+        assert _batch['s1'].shape == (64, 9)
+        assert _batch['a1'].shape == (64, 2)
+
+        config.model_config.train.data_split_ratio = 0.2
+        split_data = Data(config)
+        split_d = split_data.data
+        assert split_d.size == int(data.size * 0.2)
+        _batch = split_d.sample_batch(64)
+        assert isinstance(_batch['s1'], torch.Tensor)
+        assert _batch['s1'].shape == (64, 9)
+        assert _batch['a1'].shape == (64, 2)
+
 
 if __name__ == '__main__':
     pytest.main(__file__)

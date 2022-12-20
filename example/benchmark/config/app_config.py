@@ -32,9 +32,17 @@ def pack_func(init_func):
 
 
 app_config = Flags(
-    done_function=pack_func(done_function),
-    # data
     data_path=None,
-    split_data_buffer=False,
+    state_indices=None,
+    action_indices=None,
+    state_scaler='min_max',
+    state_scaler_params=None,
+    action_scaler='min_max',
+    action_scaler_params=None,
+    reward_scaler='min_max',
+    reward_scaler_params=None,
+    reward_fn=None,
+    cost_fn=None,
+    done_fn=None,
 )
 

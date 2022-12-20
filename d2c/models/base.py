@@ -98,10 +98,9 @@ class BaseAgent(ABC):
         """Build all the models of this RL algorithm."""
         pass
 
-    @abstractmethod
     def _init_vars(self):
         """Initialize the variables of all models."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _build_optimizers(self) -> None:
