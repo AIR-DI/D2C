@@ -56,7 +56,7 @@ class H2OAgent(BaseAgent):
             cql_max_target_backup: bool = False,
             cql_clip_diff_min: int = -1000,
             cql_clip_diff_max: int = 1000,
-            min_q_weight: float = 1.0,
+            min_q_weight: float = 0.01,
             use_td_target_ratio: bool = True,
             use_value_regularization: bool = True,
             use_adaptive_weighting: bool = True,
