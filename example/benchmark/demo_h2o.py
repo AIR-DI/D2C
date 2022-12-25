@@ -41,7 +41,8 @@ def main():
     s_norm = dict(zip(['obs_shift', 'obs_scale'], real_dataset.state_shift_scale))
     data = real_dataset.data
 
-    real_env = benchmark_env(config=config, **s_norm)
+    # real_env = benchmark_env(config=config, **s_norm)
+    real_env = benchmark_env(config=config)
     real_env_name = config.model_config.env.external.data_name
     if config.model_config.env.external.unreal_dynamics == "gravity":
         update_source_env_gravity(config.model_config.env.external.variety_degree, real_env_name)
