@@ -317,6 +317,7 @@ class H2OAgent(BaseAgent):
         info['sim_qf1_gap'] = sim_qf1_gap.detach().mean()
         info['sim_qf2_gap'] = sim_qf2_gap.detach().mean()
         info['alpha_prime_loss'] = alpha_prime_loss.detach().mean()
+        info['alpha_prime'] = alpha_prime
         if self._cql_lagrange:
             info['alpha_prime_loss'] = alpha_prime_loss
             return q_loss, alpha_prime_loss, info
@@ -355,6 +356,7 @@ class H2OAgent(BaseAgent):
 
         info = collections.OrderedDict()
         info['actor_loss'] = p_loss
+        info['alpha'] = self.alpha
         if self._automatic_entropy_tuning:
             info['alpha_loss'] = alpha_loss
             return p_loss, alpha_loss, info
