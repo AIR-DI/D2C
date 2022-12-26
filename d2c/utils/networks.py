@@ -7,7 +7,7 @@ from gym.spaces import Box, Space
 from torch import nn, Tensor
 from typing import Tuple, List, Union, Type, Optional, Sequence
 from torch.distributions import Normal, TransformedDistribution, Distribution
-from torch.distributions.transforms import AffineTransform, TanhTransform
+from torch.distributions.transforms import AffineTransform, SigmoidTransform
 
 
 ModuleType = Type[nn.Module]
@@ -86,23 +86,26 @@ class ActorNetwork(nn.Module):
         log_std = torch.tanh(log_std)
         log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)
         std = torch.exp(log_std)
+        # TanhTransform()is equivalent to \
+        # ComposeTransform([AffineTransform(0., 2.), SigmoidTransform(), AffineTransform(-1., 2.)])
         a_distribution = TransformedDistribution(
             base_distribution=Normal(
-                loc=torch.zeros(self._action_dim, device=self._device),
-                scale=torch.ones(self._action_dim, device=self._device)
+                loc=mean,
+                scale=std,
             ),
             transforms=[
-                AffineTransform(loc=mean, scale=std),
-                TanhTransform(),
+                AffineTransform(0., 2.),
+                SigmoidTransform(),
+                AffineTransform(-1., 2.),
                 AffineTransform(loc=self._action_means, scale=self._action_mags)
-            ]
+            ],
         )
         return a_distribution, a_tanh_mode
 
     def forward(self, state: Union[np.ndarray, torch.Tensor])\
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         a_dist, a_tanh_mode = self._get_output(state)
-        a_sample = a_dist.sample()
+        a_sample = a_dist.rsample()
         log_pi_a = a_dist.log_prob(a_sample)
         return a_tanh_mode, a_sample, log_pi_a
 
