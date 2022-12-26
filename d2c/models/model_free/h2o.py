@@ -201,10 +201,10 @@ class H2OAgent(BaseAgent):
         sim_next_state = sim_batch['s2']
         sim_dsc = sim_batch['dsc']
         
-        real_q1_pred = self._q_fns[0](real_state, real_action)
-        real_q2_pred = self._q_fns[1](real_state, real_action)
-        sim_q1_pred = self._q_fns[0](sim_state, sim_action)
-        sim_q2_pred = self._q_fns[1](sim_state, sim_action)
+        real_qf1_pred = self._q_fns[0](real_state, real_action)
+        real_qf2_pred = self._q_fns[1](real_state, real_action)
+        sim_qf1_pred = self._q_fns[0](sim_state, sim_action)
+        sim_qf2_pred = self._q_fns[1](sim_state, sim_action)
         
         _, real_new_next_action, real_next_log_pi = self._p_fn(real_next_state)
         real_target_q_values = torch.min(
@@ -225,17 +225,17 @@ class H2OAgent(BaseAgent):
         real_td_target = real_r + real_dsc * self._discount * real_target_q_values
         sim_td_target = sim_r + sim_dsc * self._discount * sim_target_q_values
 
-        real_qf1_loss = F.mse_loss(real_q1_pred, real_td_target)
-        real_qf2_loss = F.mse_loss(real_q2_pred, real_td_target)
+        real_qf1_loss = F.mse_loss(real_qf1_pred, real_td_target)
+        real_qf2_loss = F.mse_loss(real_qf2_pred, real_td_target)
         
         if self._use_td_target_ratio:
             sqrt_IS_ratio = torch.clamp(self.real_sim_dynacmis_ratio(sim_state, sim_action, sim_next_state), self._clip_dynamics_ratio_min, self._clip_dynamics_ratio_max).sqrt()
         else:
             sqrt_IS_ratio = torch.ones((sim_state.shape[0],)).to(self._device)
             
-        sim_qf1_loss = F.mse_loss(sqrt_IS_ratio * sim_q1_pred, sqrt_IS_ratio * sim_td_target)
-        sim_qf2_loss = F.mse_loss(sqrt_IS_ratio * sim_q2_pred, sqrt_IS_ratio * sim_td_target)
-        
+        sim_qf1_loss = F.mse_loss(sqrt_IS_ratio * sim_qf1_pred, sqrt_IS_ratio * sim_td_target)
+        sim_qf2_loss = F.mse_loss(sqrt_IS_ratio * sim_qf2_pred, sqrt_IS_ratio * sim_td_target)
+        sim_qf1_pred
         qf1_loss = real_qf1_loss + sim_qf1_loss
         qf2_loss = real_qf2_loss + sim_qf2_loss 
         
@@ -250,25 +250,25 @@ class H2OAgent(BaseAgent):
             omega = u_sa / u_sa.sum()
             
             if not self._use_variant:
-                sim_q1_pred += torch.log(omega)
-                sim_q2_pred += torch.log(omega)
+                sim_qf1_pred += torch.log(omega)
+                sim_qf2_pred += torch.log(omega)
                 
             std_omega = omega.std()
             
             if self._use_variant:
-                sim_qf1_gap = (omega * sim_q1_pred).sum()
-                sim_qf2_gap = (omega * sim_q2_pred).sum()
+                sim_qf1_gap = (omega * sim_qf1_pred).sum()
+                sim_qf2_gap = (omega * sim_qf2_pred).sum()
             else:
-                sim_qf1_gap = torch.logsumexp(sim_q1_pred / self._cql_temp, dim=0) * self._cql_temp
-                sim_qf2_gap = torch.logsumexp(sim_q2_pred / self._cql_temp, dim=0) * self._cql_temp
+                sim_qf1_gap = torch.logsumexp(sim_qf1_pred / self._cql_temp, dim=0) * self._cql_temp
+                sim_qf2_gap = torch.logsumexp(sim_qf2_pred / self._cql_temp, dim=0) * self._cql_temp
                 
             qf1_diff = torch.clamp(
-                sim_qf1_gap - real_q1_pred.mean(),
+                sim_qf1_gap - real_qf1_pred.mean(),
                 self._cql_clip_diff_min,
                 self._cql_clip_diff_max,
             )
             qf2_diff = torch.clamp(
-                sim_qf2_gap - real_q2_pred.mean(),
+                sim_qf2_gap - real_qf2_pred.mean(),
                 self._cql_clip_diff_min,
                 self._cql_clip_diff_max,
             )
@@ -293,10 +293,10 @@ class H2OAgent(BaseAgent):
             q_loss = qf1_loss + qf2_loss + min_qf1_loss + min_qf2_loss
 
         info = collections.OrderedDict()
-        info['real_Q1'] = real_q1_pred.detach().mean()
-        info['real_Q2'] = real_q2_pred.detach().mean()
-        info['sim_Q1'] = sim_q1_pred.detach().mean()
-        info['sim_Q2'] = sim_q2_pred.detach().mean()
+        info['real_Q1'] = real_qf1_pred.detach().mean()
+        info['real_Q2'] = real_qf2_pred.detach().mean()
+        info['sim_Q1'] = sim_qf1_pred.detach().mean()
+        info['sim_Q2'] = sim_qf2_pred.detach().mean()
         info['real_Q_target'] = real_target_q_values.mean()
         info['sim_Q_target'] = sim_target_q_values.mean()
         
@@ -314,6 +314,8 @@ class H2OAgent(BaseAgent):
         info['min_qf2_loss'] = min_qf2_loss.detach().mean()
         info['qf1_diff'] = qf1_diff.detach().mean()
         info['qf2_diff'] = qf2_diff.detach().mean()
+        info['sim_qf1_pred'] = sim_qf1_pred.detach().mean()
+        info['sim_qf2_pred'] = sim_qf2_pred.detach().mean()
         info['sim_qf1_gap'] = sim_qf1_gap.detach().mean()
         info['sim_qf2_gap'] = sim_qf2_gap.detach().mean()
         info['alpha_prime_loss'] = alpha_prime_loss.detach().mean()
