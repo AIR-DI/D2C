@@ -368,9 +368,9 @@ class H2OAgent(BaseAgent):
     def _optimize_p_alpha(self, batch: Tuple) -> Dict:
         p_loss, alpha_loss, info = self._build_p_alpha_loss(batch)
         
-        self._q_optimizer.zero_grad()
+        self._p_optimizer.zero_grad()
         p_loss.backward()
-        self._q_optimizer.step()
+        self._p_optimizer.step()
         
         if self._automatic_entropy_tuning:
             self._alpha_optimizer.zero_grad()
