@@ -313,8 +313,6 @@ class H2OAgent(BaseAgent):
         info['min_qf2_loss'] = min_qf2_loss.detach().mean()
         info['qf1_diff'] = qf1_diff.detach().mean()
         info['qf2_diff'] = qf2_diff.detach().mean()
-        info['sim_qf1_pred'] = sim_qf1_pred.detach().mean()
-        info['sim_qf2_pred'] = sim_qf2_pred.detach().mean()
         info['sim_qf1_gap'] = sim_qf1_gap.detach().mean()
         info['sim_qf2_gap'] = sim_qf2_gap.detach().mean()
         info['alpha_prime_loss'] = alpha_prime_loss.detach().mean()
