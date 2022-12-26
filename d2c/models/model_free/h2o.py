@@ -235,7 +235,6 @@ class H2OAgent(BaseAgent):
             
         sim_qf1_loss = F.mse_loss(sqrt_IS_ratio * sim_qf1_pred, sqrt_IS_ratio * sim_td_target)
         sim_qf2_loss = F.mse_loss(sqrt_IS_ratio * sim_qf2_pred, sqrt_IS_ratio * sim_td_target)
-        sim_qf1_pred
         qf1_loss = real_qf1_loss + sim_qf1_loss
         qf2_loss = real_qf2_loss + sim_qf2_loss 
         
