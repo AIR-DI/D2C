@@ -72,6 +72,7 @@ class ConfigBuilder:
     :param str model_config_path: the absolute path of the work dir that contains the \
         `run` script, `data` dir and `models` dir.
     :param dict command_args: the CLI parameters input;
+    :param str experiment_type: the available options are `['benchmark', 'application']`.
     :return: a complete configuration that can be used by main function.
     """
 
@@ -80,9 +81,11 @@ class ConfigBuilder:
             app_config: Flags,
             model_config_path: str,
             work_abs_dir: str,
-            command_args: Optional[Dict] = None
+            command_args: Optional[Dict] = None,
+            experiment_type: str = 'benchmark',
     ) -> None:
         self._command_args = command_args
+        self._exp_type = experiment_type
         self._check_command_args()
         self._app_cfg = app_config
         self._model_cfg_path = model_config_path
@@ -101,9 +104,14 @@ class ConfigBuilder:
 
     def _update_model_cfg(self) -> None:
         self._model_cfg = update_config(self._model_cfg_path, self._command_args)
-        self._env_info = self._get_env_info()
-        # update env parameters
-        self._update_env_info()
+        if self._exp_type == 'benchmark':
+            self._env_info = self._get_env_info()
+            # update env parameters
+            self._update_env_info()
+        elif self._exp_type == 'application':
+            self._update_env_basic_info()
+        else:
+            raise ValueError(f'The value of the parameter experiment_type is wrong!')
         # create all the models saving paths
         self._update_model_dir()
         logging.debug('=' * 20 + 'The config of this experiment' + '=' * 20)
@@ -211,14 +219,7 @@ class ConfigBuilder:
             self._env_ext.data_name
         )
         # Update the env basic_info
-        if not self._model_cfg.env.basic_info.state_dim:
-            self._model_cfg.env.basic_info.update(dict([('state_dim', self._env_info.state_info[0]),
-                                                        ('state_min', self._env_info.state_info[1]),
-                                                        ('state_max', self._env_info.state_info[2])]))
-        if not self._model_cfg.env.basic_info.action_dim:
-            self._model_cfg.env.basic_info.update(dict([('action_dim', self._env_info.action_info[0]),
-                                                        ('action_min', self._env_info.action_info[1]),
-                                                        ('action_max', self._env_info.action_info[2])]))
+        self._update_env_basic_info()
         # Update the external env info
         temp_dict = dict([('score_norm_min', self._env_info.norm_min),
                           ('score_norm_max', self._env_info.norm_max),
@@ -227,19 +228,55 @@ class ConfigBuilder:
             if self._model_cfg.env.external[k] is None:
                 self._model_cfg.env.external[k] = v
 
+    def _update_env_basic_info(self) -> None:
+        if self._exp_type == 'benchmark':
+            state_dim = self._env_info.state_info[0]
+            state_min = self._env_info.state_info[1]
+            state_max = self._env_info.state_info[2]
+            action_dim = self._env_info.action_info[0]
+            action_min = self._env_info.action_info[1]
+            action_max = self._env_info.action_info[2]
+        elif self._exp_type == 'application':
+            state_dim = len(self._app_cfg.state_indices)
+            state_min = self._app_cfg.state_scaler_params['minimum']
+            state_max = self._app_cfg.state_scaler_params['maximum']
+            action_dim = len(self._app_cfg.action_indices)
+            action_min = self._app_cfg.action_scaler_params['minimum']
+            action_max = self._app_cfg.action_scaler_params['maximum']
+        else:
+            raise ValueError(f'The value of the parameter experiment_type is wrong!')
+
+        if not self._model_cfg.env.basic_info.state_dim:
+            self._model_cfg.env.basic_info.update(dict([('state_dim', state_dim),
+                                                        ('state_min', state_min),
+                                                        ('state_max', state_max)]))
+        if not self._model_cfg.env.basic_info.action_dim:
+            self._model_cfg.env.basic_info.update(dict([('action_dim', action_dim),
+                                                        ('action_min', action_min),
+                                                        ('action_max', action_max)]))
+
     def _update_model_dir(self) -> None:
         """Construct the models' file path"""
         model_dir = self._model_cfg.train.model_dir
         model_name = self._model_cfg.model.model_name
-        model_dir = os.path.join(
-            self._work_abs_dir,
-            model_dir,
-            self._env_ext.benchmark_name,
-            self._env_ext.data_source,
-            model_name,
-            self._env_ext.env_name + '_' + self._env_ext.data_name,
-            # 's_norm_'+str(self._env_ext.state_normalize),
-        )
+        if self._exp_type == 'benchmark':
+            model_dir = os.path.join(
+                self._work_abs_dir,
+                model_dir,
+                self._env_ext.benchmark_name,
+                self._env_ext.data_source,
+                model_name,
+                self._env_ext.env_name + '_' + self._env_ext.data_name,
+                # 's_norm_'+str(self._env_ext.state_normalize),
+            )
+        elif self._exp_type == 'application':
+            model_dir = os.path.join(
+                self._work_abs_dir,
+                model_dir,
+                model_name,
+            )
+        else:
+            raise ValueError(f'The value of the parameter experiment_type is wrong!')
 
         if not self._model_cfg.train.get('behavior_ckpt_dir'):
             behavior_ckpt_dir = os.path.join(

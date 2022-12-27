@@ -100,7 +100,7 @@ class BaseAgent(ABC):
 
     def _init_vars(self):
         """Initialize the variables of all models."""
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     def _build_optimizers(self) -> None:

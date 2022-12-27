@@ -46,6 +46,7 @@ class ReplayBuffer:
             done=self._done,
             dsc=self._dsc,
         )
+        self._shuffle_indices = None
 
     def add(
             self,
@@ -176,4 +177,12 @@ class ReplayBuffer:
     def size(self) -> int:
         """The number of the transitions in the replay buffer."""
         return self._size
+
+    @property
+    def shuffle_indices(self) -> np.ndarray:
+        """Returning the shuffled indices of the transitions in the buffer."""
+        if self._shuffle_indices is None:
+            assert self._size > 0, 'There is no data in buffer!'
+            self._shuffle_indices = np.random.permutation(self._size)
+        return self._shuffle_indices
 

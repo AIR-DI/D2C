@@ -46,9 +46,7 @@
     basic_info: {state_dim: null, state_min: null, state_max: null,
       action_dim: null, action_min: null, action_max: null},
     // Parameters for Env which is provided externally
-    external: {benchmark_name: 'd4rl', data_source: 'mujoco', env_name: 'Hopper-v2', data_name: 'hopper_random-v1',
-    data_file_path: null, state_normalize: false, reward_normalize: false, num_transitions: -1,
-    score_normalize: false, score_norm_min: null, score_norm_max: null},
+    external: {},
     learned: {
       // 'mlp', 'prob', 'rnn', 'adm'
       dynamic_module_type: 'mlp',
@@ -63,7 +61,7 @@
   },
   train: {
     device: 'cuda',
-    data_loader_name: null,  // 'app' for real-world application data.
+    data_loader_name: 'app',  // 'app' for real-world application data.
     action_noise: null,  // The std value of the gaussian noise added to the action.
     data_split_ratio: null, // The ratio for splitting the dataset. It should be in (0, 1].
     train_test_ratio: 0.99,

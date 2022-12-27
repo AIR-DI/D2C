@@ -118,7 +118,7 @@ class ActorNetwork(nn.Module):
     def sample_n(self, state: Union[np.ndarray, Tensor], n: int = 1)\
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         a_dist, a_tanh_mode = self._get_output(state)
-        a_sample = a_dist.sample([n])
+        a_sample = a_dist.rsample([n])
         log_pi_a = a_dist.log_prob(a_sample)
         return a_tanh_mode, a_sample, log_pi_a
 
