@@ -280,7 +280,7 @@ class ConcatDiscriminator(Discriminator):
     """
     def __init__(
             self, 
-            *args, 
+            *args,
             dim: int = 1, 
             **kwargs):
         super().__init__(*args, **kwargs)
