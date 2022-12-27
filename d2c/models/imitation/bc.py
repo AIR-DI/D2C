@@ -4,9 +4,8 @@ Behavior cloning via maximum likelihood.
 import collections
 import torch
 import numpy as np
-from numpy import ndarray
 from torch import nn, Tensor
-from typing import Union, Tuple, Any, Optional, Dict
+from typing import Tuple, Any, Optional, Dict
 from d2c.models.base import BaseAgent, BaseAgentModule
 from d2c.utils import networks, utils, policies
 
@@ -60,8 +59,9 @@ class BCAgent(BaseAgent):
     def _optimize_step(self, batch: Dict) -> Dict:
         p_info = self._optimize_p(batch)
         if self._test_freq & (self._global_step % self._test_freq == 0):
-            test_loss = self._test_step()
-            self._train_info['test_loss(mse)'] = test_loss
+            test_info = self._test_step()
+            for k, v in test_info.items():
+                self._train_info[k] = v
         return p_info
 
     def _get_train_batch(self) -> Dict:
@@ -77,12 +77,13 @@ class BCAgent(BaseAgent):
         test_indices = shuffle_indices[train_size:]
         return self._train_data.get_batch_indices(test_indices)
 
-    def _test_step(self) -> ndarray:
+    def _test_step(self) -> Dict:
         test_batch = self._get_test_batch()
         s1 = test_batch['s1']
         a1 = test_batch['a1']
         test_data_size = len(s1)
         test_loss = []
+        test_log_prob = []
         with torch.no_grad():
             for i in range(test_data_size // self._batch_size + (test_data_size % self._batch_size > 0)):
                 _s1 = s1[i*self._batch_size:(i+1)*self._batch_size]
@@ -90,7 +91,14 @@ class BCAgent(BaseAgent):
                 a_pred, _, _ = self._p_fn(_s1)
                 _loss = ((a_pred - _a1) ** 2).mean().item()
                 test_loss.append(_loss)
-        return np.mean(test_loss)
+                log_prob = self._p_fn.get_log_density(_s1, _a1)
+                test_log_prob.append(log_prob.mean().item())
+        test_loss = np.mean(test_loss)
+        test_log_prob = np.mean(test_log_prob)
+        info = collections.OrderedDict()
+        info['test_loss(mse)'] = test_loss
+        info['test_log_prob'] = test_log_prob
+        return info
 
     def _build_test_policies(self) -> None:
         policy = policies.DeterministicSoftPolicy(

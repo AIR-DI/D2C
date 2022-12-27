@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 import pytest
 from d2c.utils.config import ConfigBuilder
 from d2c.utils.utils import abs_file_path
@@ -34,6 +36,19 @@ class TestCfg:
         assert config.model_config.env.external.score_norm_min == 0.001
         assert config.model_config.env.external.score_norm_max == 3234.3
         _ = cfg_builder.main_hyper_params(config.model_config)
+
+    def test_app_cfg_builder(self):
+        app_config.state_indices = np.arange(10)
+        app_config.action_indices = np.arange(10, 12)
+        cfg_builder = ConfigBuilder(
+            app_config=app_config,
+            model_config_path=self.model_config_path,
+            work_abs_dir=self.work_abs_dir,
+            command_args=self.command_args,
+            experiment_type='application',
+        )
+        config = cfg_builder.build_config()
+        assert np.all(config.app_config.state_indices == np.arange(10))
 
 
 if __name__ == '__main__':

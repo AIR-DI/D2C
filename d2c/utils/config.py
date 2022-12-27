@@ -78,7 +78,7 @@ class ConfigBuilder:
 
     def __init__(
             self,
-            app_config: Flags,
+            app_config: Any,
             model_config_path: str,
             work_abs_dir: str,
             command_args: Optional[Dict] = None,
@@ -104,14 +104,9 @@ class ConfigBuilder:
 
     def _update_model_cfg(self) -> None:
         self._model_cfg = update_config(self._model_cfg_path, self._command_args)
-        if self._exp_type == 'benchmark':
-            self._env_info = self._get_env_info()
-            # update env parameters
-            self._update_env_info()
-        elif self._exp_type == 'application':
-            self._update_env_basic_info()
-        else:
-            raise ValueError(f'The value of the parameter experiment_type is wrong!')
+        self._env_info = self._get_env_info()
+        # update env parameters
+        self._update_env_info()
         # create all the models saving paths
         self._update_model_dir()
         logging.debug('=' * 20 + 'The config of this experiment' + '=' * 20)
@@ -152,37 +147,59 @@ class ConfigBuilder:
         return _dict
 
     def _get_env_info(self) -> Flags:
-        try:
-            self._env_ext = self._model_cfg.env.external
-            # sys.path.append('../../example/benchmark/')
-            import_path = '.'.join(('example.benchmark.data', self._env_ext.benchmark_name, self._env_ext.data_source))
-            module = importlib.import_module(import_path)
-            domain = self._env_ext.env_name.split('-')[0]
-            env_info = Flags(
-                norm_min=getattr(module, (domain + '_random_score').upper()),
-                norm_max=getattr(module, (domain + '_expert_score').upper()),
-                state_info=getattr(module, (domain + '_state').upper()),
-                action_info=getattr(module, (domain + '_action').upper()),
-            )
-        except:
-            benchmark_name = self._env_ext.benchmark_name
-            data_source = self._env_ext.data_source
-            env_name = self._env_ext.env_name
-            kwargs = dict()
-            if 'combined_challenge' in self._env_ext:
-                kwargs.update({'combined_challenge': self._env_ext.combined_challenge})
-            state_info, action_info = self._get_env_space(
-                benchmark_name,
-                data_source,
-                env_name,
-                **kwargs,
-            )
+        if self._exp_type == 'benchmark':
+            try:
+                self._env_ext = self._model_cfg.env.external
+                # sys.path.append('../../example/benchmark/')
+                import_path = '.'.join(('example.benchmark.data', self._env_ext.benchmark_name, self._env_ext.data_source))
+                module = importlib.import_module(import_path)
+                domain = self._env_ext.env_name.split('-')[0]
+                env_info = Flags(
+                    norm_min=getattr(module, (domain + '_random_score').upper()),
+                    norm_max=getattr(module, (domain + '_expert_score').upper()),
+                    state_info=getattr(module, (domain + '_state').upper()),
+                    action_info=getattr(module, (domain + '_action').upper()),
+                )
+            except:
+                benchmark_name = self._env_ext.benchmark_name
+                data_source = self._env_ext.data_source
+                env_name = self._env_ext.env_name
+                kwargs = dict()
+                if 'combined_challenge' in self._env_ext:
+                    kwargs.update({'combined_challenge': self._env_ext.combined_challenge})
+                state_info, action_info = self._get_env_space(
+                    benchmark_name,
+                    data_source,
+                    env_name,
+                    **kwargs,
+                )
+                env_info = Flags(
+                    norm_min=None,
+                    norm_max=None,
+                    state_info=state_info,
+                    action_info=action_info,
+                )
+        elif self._exp_type == 'application':
+            state_dim = len(self._app_cfg.state_indices)
+            if self._app_cfg.state_scaler == 'min_max':
+                state_min = 0.0
+                state_max = 1.0
+            else:
+                state_min, state_max = -np.inf, np.inf
+            action_dim = len(self._app_cfg.action_indices)
+            if self._app_cfg.action_scaler == 'min_max':
+                action_min = 0.0
+                action_max = 1.0
+            else:
+                action_min, action_max = -np.inf, np.inf
             env_info = Flags(
                 norm_min=None,
                 norm_max=None,
-                state_info=state_info,
-                action_info=action_info,
+                state_info=(state_dim, state_min, state_max),
+                action_info=(action_dim, action_min, action_max),
             )
+        else:
+            raise ValueError(f'The value of the parameter experiment_type is wrong!')
         return env_info
 
     def _get_env_space(
@@ -210,41 +227,32 @@ class ConfigBuilder:
         return state_info, action_info
 
     def _update_env_info(self) -> None:
-        # update env parameters
-        data_file_path = os.path.join(
-            self._work_abs_dir,
-            'data',
-            self._env_ext.benchmark_name,
-            self._env_ext.data_source,
-            self._env_ext.data_name
-        )
         # Update the env basic_info
         self._update_env_basic_info()
-        # Update the external env info
-        temp_dict = dict([('score_norm_min', self._env_info.norm_min),
-                          ('score_norm_max', self._env_info.norm_max),
-                          ('data_file_path', data_file_path)])
-        for k, v in temp_dict.items():
-            if self._model_cfg.env.external[k] is None:
-                self._model_cfg.env.external[k] = v
+        if self._exp_type == 'benchmark':
+            # update env parameters
+            data_file_path = os.path.join(
+                self._work_abs_dir,
+                'data',
+                self._env_ext.benchmark_name,
+                self._env_ext.data_source,
+                self._env_ext.data_name
+            )
+            # Update the external env info
+            temp_dict = dict([('score_norm_min', self._env_info.norm_min),
+                              ('score_norm_max', self._env_info.norm_max),
+                              ('data_file_path', data_file_path)])
+            for k, v in temp_dict.items():
+                if self._model_cfg.env.external[k] is None:
+                    self._model_cfg.env.external[k] = v
 
     def _update_env_basic_info(self) -> None:
-        if self._exp_type == 'benchmark':
-            state_dim = self._env_info.state_info[0]
-            state_min = self._env_info.state_info[1]
-            state_max = self._env_info.state_info[2]
-            action_dim = self._env_info.action_info[0]
-            action_min = self._env_info.action_info[1]
-            action_max = self._env_info.action_info[2]
-        elif self._exp_type == 'application':
-            state_dim = len(self._app_cfg.state_indices)
-            state_min = self._app_cfg.state_scaler_params['minimum']
-            state_max = self._app_cfg.state_scaler_params['maximum']
-            action_dim = len(self._app_cfg.action_indices)
-            action_min = self._app_cfg.action_scaler_params['minimum']
-            action_max = self._app_cfg.action_scaler_params['maximum']
-        else:
-            raise ValueError(f'The value of the parameter experiment_type is wrong!')
+        state_dim = self._env_info.state_info[0]
+        state_min = self._env_info.state_info[1]
+        state_max = self._env_info.state_info[2]
+        action_dim = self._env_info.action_info[0]
+        action_min = self._env_info.action_info[1]
+        action_max = self._env_info.action_info[2]
 
         if not self._model_cfg.env.basic_info.state_dim:
             self._model_cfg.env.basic_info.update(dict([('state_dim', state_dim),
