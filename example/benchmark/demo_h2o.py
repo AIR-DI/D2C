@@ -1,5 +1,6 @@
 import sys
 sys.path.append('../../')
+import fire
 import torch
 import logging
 from d2c.trainers import Trainer
@@ -30,7 +31,7 @@ def main():
         'model.model_name': 'h2o',
         'train.data_loader_name': None,
         'train.device': device,
-        'train.seed': 0,
+        'train.seed': 19,
         'train.total_train_steps': 1000000,
         'train.batch_size': 256,
         'train.agent_ckpt_name': '1211'
@@ -74,4 +75,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    fire.Fire(main)
