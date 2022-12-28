@@ -58,10 +58,11 @@ class BCAgent(BaseAgent):
 
     def _optimize_step(self, batch: Dict) -> Dict:
         p_info = self._optimize_p(batch)
-        if self._test_freq & (self._global_step % self._test_freq == 0):
-            test_info = self._test_step()
-            for k, v in test_info.items():
-                self._train_info[k] = v
+        if self._test_freq:
+            if self._global_step % self._test_freq == 0:
+                test_info = self._test_step()
+                for k, v in test_info.items():
+                    self._train_info[k] = v
         return p_info
 
     def _get_train_batch(self) -> Dict:
@@ -97,7 +98,7 @@ class BCAgent(BaseAgent):
         test_log_prob = np.mean(test_log_prob)
         info = collections.OrderedDict()
         info['test_loss(mse)'] = test_loss
-        info['test_log_prob'] = test_log_prob
+        info['test_loss(-log_prob)'] = - test_log_prob
         return info
 
     def _build_test_policies(self) -> None:

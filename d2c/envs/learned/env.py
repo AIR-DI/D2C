@@ -48,11 +48,11 @@ class LeaEnv(BaseEnv):
         self._d_fns = None
         if not self._with_reward:
             try:
-                self._r_fn = config.app_config.reward_function
+                self._r_fn = config.app_config.reward_fn
             except AttributeError:
                 print('Please define the reward function first if the dynamics model do not predict reward!')
                 raise
-        self._done_fn = config.app_config.done_function
+        self._done_fn = config.app_config.done_fn
         self._device = config.model_config.train.device
         self.state = None
         self.action_past = None

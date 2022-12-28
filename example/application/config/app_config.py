@@ -21,7 +21,7 @@ app_config = Flags(
     state_scaler='min_max',
     state_scaler_params=dict(minimum=s_min, maximum=s_max),
     action_scaler='min_max',
-    action_scaler_params=dict(minimun=a_min, maximum=a_max),
+    action_scaler_params=dict(minimum=a_min, maximum=a_max),
     reward_scaler=None,
     reward_scaler_params=None,
     reward_fn=None,

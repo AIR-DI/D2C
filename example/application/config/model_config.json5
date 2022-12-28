@@ -8,9 +8,11 @@
       // set the model training schedule ('b': behavior, 'd': dynamics, 'q': Q-value function, 'vae_s': vae_s, 'agent': agent)
       train_schedule: ['agent'],
       hyper_params: {
-        model_params: {p: [[300, 300],]},
+        model_params: {p: [[256, 256],]},
         // p
-        optimizers: {p: ['adam', 1e-5],},
+        optimizers: {p: ['adam', 3e-4],},
+        test_data_ratio: 0.1,
+        test_freq: 100,
       },
     },
     td3_bc: {
