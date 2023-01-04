@@ -1,8 +1,8 @@
 import os
-
 import numpy as np
 import pytest
-from d2c.utils.config import ConfigBuilder
+from easydict import EasyDict
+from d2c.utils.config import ConfigBuilder, flat_dict
 from d2c.utils.utils import abs_file_path
 from example.benchmark.config.app_config import app_config
 
@@ -49,6 +49,14 @@ class TestCfg:
         )
         config = cfg_builder.build_config()
         assert np.all(config.app_config.state_indices == np.arange(10))
+
+
+def test_flat_dict():
+    a = {'a': {'b': {'c': 4}}, 'd': {'e': 5}}
+    a = EasyDict(a)
+    b = {k: v for k, v in flat_dict(a)}
+    assert b['a.b.c'] == 4
+    assert b['d.e'] == 5
 
 
 if __name__ == '__main__':

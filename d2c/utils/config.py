@@ -1,12 +1,13 @@
 """The general config that integrates the app_config and model_config"""
 
 import os
+import copy
 import json5
 import logging
 import importlib
 import numpy as np
 from easydict import EasyDict
-from typing import Union, Optional, Dict, Any, Tuple
+from typing import Union, Optional, Dict, Any, Tuple, Generator
 from d2c.utils.utils import Flags
 from d2c.envs import benchmark_env
 
@@ -57,6 +58,16 @@ def update_nested_dict_by_dict(
     for k, v in from_dict.items():
         update_nested_dict_by_kv(to_dict, k.split("."), v)
     return to_dict
+
+
+def flat_dict(x: Dict) -> Generator:
+    for key, value in x.items():
+        if isinstance(value, dict):
+            for k, v in flat_dict(value):
+                k = '.'.join([key, k])
+                yield k, v
+        else:
+            yield key, value
 
 
 class ConfigBuilder:
@@ -110,7 +121,13 @@ class ConfigBuilder:
         # create all the models saving paths
         self._update_model_dir()
         logging.debug('=' * 20 + 'The config of this experiment' + '=' * 20)
-        logging.debug(json5.dumps(self._model_cfg, indent=2, ensure_ascii=False))
+        _m_cfg = copy.deepcopy(self._model_cfg)
+        _dict = {}
+        for k, v in flat_dict(_m_cfg):
+            if isinstance(v, np.ndarray):
+                _dict.update({k: v.tolist()})
+        _m_cfg = update_nested_dict_by_dict(_dict, _m_cfg)
+        logging.debug(json5.dumps(_m_cfg, indent=2, ensure_ascii=False))
 
     def build_config(self) -> Flags:
         """The API to build the final config."""
@@ -129,8 +146,8 @@ class ConfigBuilder:
         _dict = {}
         _dict.update(model_name=_model_cfg.model.model_name)
         model_hyper_params = _model_cfg.model[_dict['model_name']].hyper_params
-        model_hyper_params['model_params'] = str(model_hyper_params.model_params)
-        model_hyper_params['optimizers'] = str(model_hyper_params.optimizers)
+        for k, v in model_hyper_params.items():
+            model_hyper_params[k] = str(v)
         _dict.update(model_hyper_params)
 
         _dict.update(env_external=_model_cfg.env.external)
@@ -142,6 +159,11 @@ class ConfigBuilder:
             _dict.update({k: _model_cfg.train[k]})
 
         print('='*20 + 'The main hyperparameters of this experiment' + '='*20)
+        _d = {}
+        for k, v in flat_dict(_dict):
+            if isinstance(v, np.ndarray):
+                _d.update({k: v.tolist()})
+        _dict = update_nested_dict_by_dict(_d, _dict)
         print(json5.dumps(_dict, indent=2, ensure_ascii=False))
 
         return _dict
