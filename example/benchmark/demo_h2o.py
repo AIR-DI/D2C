@@ -51,8 +51,7 @@ def main():
     s_norm = dict(zip(['obs_shift', 'obs_scale'], real_dataset.state_shift_scale))
     data = real_dataset.data
 
-    real_env = benchmark_env(config=config, **s_norm)
-    # real_env = benchmark_env(config=config)
+    real_env = benchmark_env(config=config)
     real_env_name = config.model_config.env.external.data_name
     if config.model_config.env.external.unreal_dynamics == "gravity":
         update_source_env_gravity(config.model_config.env.external.variety_degree, real_env_name)
@@ -62,7 +61,7 @@ def main():
         update_source_env_friction(config.model_config.env.external.variety_degree, real_env_name)
     else:
         raise RuntimeError("Got erroneous unreal dynamics %s" % config.model_config.env.external.unreal_dynamics)
-    sim_env = benchmark_env(config, **s_norm)
+    sim_env = benchmark_env(config)
     if config.model_config.env.external.unreal_dynamics == "gravity":
         update_source_env_gravity(1, real_env_name)
     elif config.model_config.env.external.unreal_dynamics == "density":
@@ -73,7 +72,6 @@ def main():
         raise RuntimeError("Got erroneous unreal dynamics %s" % config.model_config.env.external.unreal_dynamics)
     print("\n-------------Env name: {}, variety: {}, unreal_dynamics: {}-------------".format(config.model_config.env.external.env_name, config.model_config.env.external.variety_degree, config.model_config.env.external.unreal_dynamics))
 
-    
     # agent with an empty buffer
     agent = make_agent(config=config, env=sim_env, data=data)
     # envaluate in the real env
