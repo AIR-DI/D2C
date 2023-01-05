@@ -1,4 +1,5 @@
 import sys
+import datetime
 sys.path.append('../../')
 import fire
 import torch
@@ -12,7 +13,8 @@ from d2c.utils.utils import update_source_env_gravity, update_source_env_frictio
 from example.benchmark.config import make_config
 
 logging.basicConfig(level=logging.INFO)
-
+nowTime = datetime.datetime.now().strftime('%y-%m-%d-%H-%M-%S')
+import pdb
 
 def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -31,11 +33,18 @@ def main():
         'model.model_name': 'h2o',
         'train.data_loader_name': None,
         'train.device': device,
-        'train.seed': 19,
+        'train.seed': 52,
         'train.total_train_steps': 1000000,
-        'train.batch_size': 256,
+        'train.batch_size': 128,
         'train.agent_ckpt_name': '1211'
     })
+    wandb = {
+        'name': command_args['env.external.data_name']+'_'+command_args['env.external.unreal_dynamics']+'x'+str(command_args['env.external.variety_degree'])+'_seed='+str(command_args['train.seed'])+'_'+nowTime,
+        'reinit': False,
+        'mode': 'online'
+    }
+    command_args.update({'train.wandb': wandb})
+
 
     config = make_config(command_args)
     real_dataset = Data(config)
@@ -75,4 +84,4 @@ def main():
 
 
 if __name__ == '__main__':
-    fire.Fire(main)
+    main()
