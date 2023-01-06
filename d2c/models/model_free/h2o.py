@@ -247,17 +247,15 @@ class H2OAgent(BaseAgent):
                 u_sa = torch.ones(sim_r.shape[0], device=self._device)
                 
             omega = u_sa / u_sa.sum()
-            
-            if not self._use_variant:
-                sim_qf1_pred += torch.log(omega)
-                sim_qf2_pred += torch.log(omega)
-                
             std_omega = omega.std()
             
             if self._use_variant:
                 sim_qf1_gap = (omega * sim_qf1_pred).sum()
                 sim_qf2_gap = (omega * sim_qf2_pred).sum()
             else:
+                pdb.set_trace()
+                sim_qf1_pred += torch.log(omega)
+                sim_qf2_pred += torch.log(omega)
                 sim_qf1_gap = torch.logsumexp(sim_qf1_pred / self._cql_temp, dim=0) * self._cql_temp
                 sim_qf2_gap = torch.logsumexp(sim_qf2_pred / self._cql_temp, dim=0) * self._cql_temp
                 
