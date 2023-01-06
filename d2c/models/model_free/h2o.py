@@ -56,7 +56,7 @@ class H2OAgent(BaseAgent):
             cql_max_target_backup: bool = False,
             cql_clip_diff_min: int = -1000,
             cql_clip_diff_max: int = 1000,
-            min_q_weight: float = 0.01,
+            min_q_weight: float = 0.02,
             use_td_target_ratio: bool = True,
             use_value_regularization: bool = True,
             use_adaptive_weighting: bool = True,
@@ -253,7 +253,6 @@ class H2OAgent(BaseAgent):
                 sim_qf1_gap = (omega * sim_qf1_pred).sum()
                 sim_qf2_gap = (omega * sim_qf2_pred).sum()
             else:
-                pdb.set_trace()
                 sim_qf1_pred += torch.log(omega)
                 sim_qf2_pred += torch.log(omega)
                 sim_qf1_gap = torch.logsumexp(sim_qf1_pred / self._cql_temp, dim=0) * self._cql_temp
