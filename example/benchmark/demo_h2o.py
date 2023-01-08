@@ -24,8 +24,8 @@ def main():
         prefix + 'data_source': 'mujoco',
         prefix + 'env_name': 'HalfCheetah-v2',
         prefix + 'data_name': 'halfcheetah_medium_replay-v2',
-        prefix + 'unreal_dynamics': 'gravity',
-        prefix + 'variety_degree': 2.0,
+        prefix + 'unreal_dynamics': 'gravity', # gravity, friction or joint noise
+        prefix + 'variety_degree': 2.0, # multiplier on gravity acceleration, friction coefficient or joint noise std
         prefix + 'state_normalize': False,
         prefix + 'score_normalize': True,
     }
@@ -33,7 +33,7 @@ def main():
         'model.model_name': 'h2o',
         'train.data_loader_name': None,
         'train.device': device,
-        'train.seed': 19,
+        'train.seed': 42,
         'train.total_train_steps': 1000000,
         'train.batch_size': 128,
         'train.agent_ckpt_name': '1211'
@@ -59,6 +59,8 @@ def main():
         update_source_env_density(config.model_config.env.external.variety_degree, real_env_name)
     elif config.model_config.env.external.unreal_dynamics == "friction":
         update_source_env_friction(config.model_config.env.external.variety_degree, real_env_name)
+    elif config.model_config.env.external.unreal_dynamics == "joint noise":
+        pass
     else:
         raise RuntimeError("Got erroneous unreal dynamics %s" % config.model_config.env.external.unreal_dynamics)
     sim_env = benchmark_env(config, **s_norm)
@@ -68,12 +70,14 @@ def main():
         update_source_env_density(1, real_env_name)
     elif config.model_config.env.external.unreal_dynamics == "friction":
         update_source_env_friction(1, real_env_name)
+    elif config.model_config.env.external.unreal_dynamics == "joint noise":
+        pass
     else:
         raise RuntimeError("Got erroneous unreal dynamics %s" % config.model_config.env.external.unreal_dynamics)
     print("\n-------------Env name: {}, variety: {}, unreal_dynamics: {}-------------".format(config.model_config.env.external.env_name, config.model_config.env.external.variety_degree, config.model_config.env.external.unreal_dynamics))
 
     # agent with an empty buffer
-    agent = make_agent(config=config, env=sim_env, data=data)
+    agent = make_agent(config=config, env=sim_env, data=data
     # envaluate in the real env
     evaluator = bm_eval(agent=agent, env=real_env, config=config)
     # train in the sim env
