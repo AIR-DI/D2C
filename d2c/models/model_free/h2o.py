@@ -38,9 +38,6 @@ class H2OAgent(BaseAgent):
             update_actor_freq: int = 1,
             rollout_sim_freq: int = 1000,
             rollout_sim_num: int = 1000,
-            alpha: float = 2.5,
-            initial_lambda: float = 5,
-            lambda_lr: float = 3e-4,
             automatic_entropy_tuning: bool = True,
             log_alpha_init_value: float = 0.0,
             log_alpha_prime_init_value: float = 1.0,
@@ -49,6 +46,7 @@ class H2OAgent(BaseAgent):
             alpha_multiplier: float = 1.0,
             sampling_n_next_states: int = 10,
             s_prime_std_ratio: float = 1.0,
+            noise_std_discriminator: float = 0.1,
             cql_importance_sample: bool = True,
             cql_lagrange: bool = False,
             cql_target_action_gap: float = 1.0,
@@ -56,7 +54,7 @@ class H2OAgent(BaseAgent):
             cql_max_target_backup: bool = False,
             cql_clip_diff_min: int = -1000,
             cql_clip_diff_max: int = 1000,
-            min_q_weight: float = 0.02,
+            min_q_weight: float = 0.01,
             use_td_target_ratio: bool = True,
             use_value_regularization: bool = True,
             use_adaptive_weighting: bool = True,
@@ -73,9 +71,6 @@ class H2OAgent(BaseAgent):
         self._update_actor_freq = update_actor_freq
         self._rollout_sim_freq = rollout_sim_freq
         self._rollout_sim_num = rollout_sim_num
-        self._alpha = alpha
-        self._initial_lambda = initial_lambda
-        self._lambda_lr = lambda_lr
         
         self._automatic_entropy_tuning = automatic_entropy_tuning
         self._log_alpha_init_value = log_alpha_init_value
@@ -97,6 +92,7 @@ class H2OAgent(BaseAgent):
         self._use_variant = use_variant
         self._sampling_n_next_states = sampling_n_next_states
         self._s_prime_std_ratio = s_prime_std_ratio
+        self._noise_std_discriminator = noise_std_discriminator
         self._clip_dynamics_ratio_min = clip_dynamics_ratio_min
         self._clip_dynamics_ratio_max = clip_dynamics_ratio_max
         self._adaptive_weighting_min = adaptive_weighting_min
@@ -168,6 +164,15 @@ class H2OAgent(BaseAgent):
         sim_state = sim_batch['s1']
         sim_action = sim_batch['a1']
         sim_next_state = sim_batch['s2']
+        
+        # input noise: prevents overfitting
+        if self._noise_std_discriminator > 0:
+            real_state += torch.randn(real_state.shape, device=self._device) * self._noise_std_discriminator
+            real_action += torch.randn(real_action.shape, device=self._device) * self._noise_std_discriminator
+            real_next_state += torch.randn(real_next_state.shape, device=self._device) * self._noise_std_discriminator
+            sim_state += torch.randn(sim_state.shape, device=self._device) * self._noise_std_discriminator
+            sim_action += torch.randn(sim_action.shape, device=self._device) * self._noise_std_discriminator
+            sim_next_state += torch.randn(sim_next_state.shape, device=self._device) * self._noise_std_discriminator
         
         real_sa_logits = self._dsa_fn(real_state, real_action)
         real_sa_prob = F.softmax(real_sa_logits, dim=1)
