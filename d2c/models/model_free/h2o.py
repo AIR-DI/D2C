@@ -357,6 +357,7 @@ class H2OAgent(BaseAgent):
 
         info = collections.OrderedDict()
         info['actor_loss'] = p_loss
+        info['log_pi'] = df_log_pi.mean()
         info['alpha'] = self.alpha
         if self._automatic_entropy_tuning:
             info['alpha_loss'] = alpha_loss
