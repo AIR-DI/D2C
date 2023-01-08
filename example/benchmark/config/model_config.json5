@@ -37,8 +37,6 @@
       hyper_params: {
         model_params: {q: [[256, 256], 2], p: [[256, 256],], dsa: [[256],], dsas: [[256],]},
         optimizers: {q: ['adam', 3e-4], p: ['adam', 3e-4], dsa: ['adam', 3e-4], dsas: ['adam', 3e-4], alpha: ['adam', 3e-4], alpha_prime: ['adam', 3e-4]},
-        alpha: 0.01,
-        lambda_lr: 0.0003,
       }
     }
   },
