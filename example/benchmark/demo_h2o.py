@@ -77,7 +77,7 @@ def main():
     print("\n-------------Env name: {}, variety: {}, unreal_dynamics: {}-------------".format(config.model_config.env.external.env_name, config.model_config.env.external.variety_degree, config.model_config.env.external.unreal_dynamics))
 
     # agent with an empty buffer
-    agent = make_agent(config=config, env=sim_env, data=data
+    agent = make_agent(config=config, env=sim_env, data=data)
     # envaluate in the real env
     evaluator = bm_eval(agent=agent, env=real_env, config=config)
     # train in the sim env
