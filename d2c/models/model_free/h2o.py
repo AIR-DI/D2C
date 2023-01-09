@@ -353,11 +353,12 @@ class H2OAgent(BaseAgent):
                 self._q_fns[0](df_state, df_new_action),
                 self._q_fns[1](df_state, df_new_action),
             )
-            p_loss = (self.alpha * df_log_pi.sum(dim=-1) - q_new_action).mean() 
+            sum_log_pi = df_log_pi.sum(dim=-1)
+            p_loss = (self.alpha * sum_log_pi - q_new_action).mean() 
 
         info = collections.OrderedDict()
         info['actor_loss'] = p_loss
-        info['log_pi'] = df_log_pi.mean()
+        info['log_pi'] = sum_log_pi.mean()
         info['alpha'] = self.alpha
         if self._automatic_entropy_tuning:
             info['alpha_loss'] = alpha_loss
