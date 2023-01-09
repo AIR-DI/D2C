@@ -92,6 +92,7 @@ def make_agent(
     agent = get_agent(model_name)(**agent_args)
     if restore_agent:
         agent.restore(model_cfg.train.agent_ckpt_dir)
+        print('\n' + '='*20 + f'Restoring the agent from {model_cfg.train.agent_ckpt_dir}.' + '='*20 + '\n')
     return agent
 
 
