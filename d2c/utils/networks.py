@@ -200,7 +200,10 @@ class CriticNetwork(nn.Module):
         hidden_sizes = [state_dim + action_dim] + list(fc_layer_params)
         for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):
             self._layers += miniblock(in_dim, out_dim, None, nn.ReLU)
-        self._layers += [nn.Linear(hidden_sizes[-1], 1)]
+        last_layer = nn.Linear(hidden_sizes[-1], 1)
+        nn.init.xavier_uniform_(last_layer.weight, gain=1e-2)
+        nn.init.constant_(last_layer.bias, 0.0)
+        self._layers += [last_layer]
         self._model = nn.Sequential(*self._layers)
 
     def forward(
