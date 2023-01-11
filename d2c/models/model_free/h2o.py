@@ -438,9 +438,9 @@ class H2OAgent(BaseAgent):
     def _optimize_step(self, batch: Dict) -> Dict:
         info = collections.OrderedDict()
         # dis_real_batch = self._train_data.sample_batch(self._batch_size)
-        # dis_sim_batch = self._empty_dataset.sample_batch(self._batch_size)
-        d_info = self._optimize_dsa_dsas(batch)
+        # dis_sim_batch = self._empty_dataset.sample_batch(self._batch_size
         q_info = self._optimize_q_alpha_prime(batch)
+        d_info = self._optimize_dsa_dsas(batch)
         if self._global_step % self._update_actor_freq == 0:
             self._p_info = self._optimize_p_alpha(batch)
             # Update the target networks.
