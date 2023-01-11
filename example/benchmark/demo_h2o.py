@@ -1,7 +1,6 @@
 import sys
 import datetime
 sys.path.append('../../')
-import fire
 import torch
 import logging
 from d2c.trainers import Trainer
