@@ -230,16 +230,16 @@ class H2OAgent(BaseAgent):
         real_td_target = real_r + real_dsc * self._discount * real_target_q_values
         sim_td_target = sim_r + sim_dsc * self._discount * sim_target_q_values
 
-        real_qf1_loss = F.mse_loss(real_qf1_pred, real_td_target)
-        real_qf2_loss = F.mse_loss(real_qf2_pred, real_td_target)
+        real_qf1_loss = F.mse_loss(real_qf1_pred, real_td_target.detach())
+        real_qf2_loss = F.mse_loss(real_qf2_pred, real_td_target.detach())
         
         if self._use_td_target_ratio:
             sqrt_IS_ratio = torch.clamp(self.real_sim_dynacmis_ratio(sim_state, sim_action, sim_next_state), self._clip_dynamics_ratio_min, self._clip_dynamics_ratio_max).sqrt()
         else:
             sqrt_IS_ratio = torch.ones((sim_state.shape[0],)).to(self._device)
             
-        sim_qf1_loss = F.mse_loss(sqrt_IS_ratio * sim_qf1_pred, sqrt_IS_ratio * sim_td_target)
-        sim_qf2_loss = F.mse_loss(sqrt_IS_ratio * sim_qf2_pred, sqrt_IS_ratio * sim_td_target)
+        sim_qf1_loss = F.mse_loss(sqrt_IS_ratio * sim_qf1_pred, sqrt_IS_ratio * sim_td_target.detach())
+        sim_qf2_loss = F.mse_loss(sqrt_IS_ratio * sim_qf2_pred, sqrt_IS_ratio * sim_td_target.detach())
         qf1_loss = real_qf1_loss + sim_qf1_loss
         qf2_loss = real_qf2_loss + sim_qf2_loss 
         
