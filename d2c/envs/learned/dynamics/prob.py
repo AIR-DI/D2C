@@ -92,6 +92,13 @@ class ProbDyna(BaseDyna):
             info['test(-log_prob)'] = test_neg_log_prob
         return info
 
+    def _optimize_step(self, batch: Dict) -> Dict:
+        loss, info = self._build_loss(batch)
+        self._optimizer.zero_grad()
+        loss.backward()
+        self._optimizer.step()
+        return info
+
     def _get_modules(self) -> utils.Flags:
         model_params, n_d_fns = self._model_params
 

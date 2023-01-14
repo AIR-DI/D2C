@@ -112,6 +112,7 @@ class BaseDyna(ABC):
         """Samples and constructs batch of transitions from the testing data set"""
         return self._train_data.get_batch_indices(self._test_indices)
 
+    @abstractmethod
     def _optimize_step(self, batch: Dict) -> Dict:
         pass
 
