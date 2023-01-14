@@ -66,7 +66,7 @@
     data_loader_name: 'app',  // 'app' for real-world application data.
     action_noise: null,  // The std value of the gaussian noise added to the action.
     data_split_ratio: null, // The ratio for splitting the dataset. It should be in (0, 1].
-    train_test_ratio: 0.99,
+    test_data_ratio: 0.1,
     batch_size: 64,
     model_buffer_size: null,  // The capacity of the empty buffer.
     weight_decays: 0.0,

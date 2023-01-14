@@ -238,8 +238,8 @@ class DMILAgent(BaseAgent):
 
         def f_net_factory():
             return networks.ProbDynamicsNetwork(
-                observation_space=self._observation_space,
-                action_space=self._action_space,
+                state_dim=self._observation_space.shape[0],
+                action_dim=self._action_space.shape[0],
                 fc_layer_params=model_params_f,
                 device=self._device,
             )

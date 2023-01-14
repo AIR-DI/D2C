@@ -176,39 +176,40 @@ class ActorNetworkDet(nn.Module):
 class ProbDynamicsNetwork(nn.Module):
     """Stochastic Dynamics network(Probabilistic dynamics model).
 
-    :param Box observation_space: the observation space information. It is an instance
-        of class: ``gym.spaces.Box``.
-    :param Box action_space: the action space information. It is an instance
-        of class: ``gym.spaces.Box``.
+    :param int state_dim: the observation space dimension.
+    :param int action_dim: the action space dimension.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
+    :param bool local_mode: `local_mode` means that this model predicts the difference to the current state.
+    :param bool with_reward: if the output of the dynamics contains the reward or not.
     :param device: which device to create this model on. Default to 'cpu'.
     """
 
     def __init__(
             self,
-            observation_space: Union[Box, Space],
-            action_space: Union[Box, Space],
+            state_dim: int,
+            action_dim: int,
             fc_layer_params: Sequence[int] = (),
+            local_mode: bool = False,
+            with_reward: bool = False,
             device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
         super(ProbDynamicsNetwork, self).__init__()
+        self._local_mode = local_mode
+        self._with_reward = with_reward
         self._device = device
-        state_dim = observation_space.shape[0]
-        self._action_space = action_space
-        self._action_dim = action_space.shape[0]
-        self._state_space = observation_space
-        self._state_dim = observation_space.shape[0]
+        self._action_dim = action_dim
+        self._state_dim = state_dim
         self._layers = []
         hidden_sizes = [state_dim+self._action_dim] + list(fc_layer_params)
         for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):
             self._layers += miniblock(in_dim, out_dim, None, nn.ReLU)
-        output_dim = self._state_dim * 2
+        output_dim = (self._state_dim + with_reward) * 2
         self._layers += [nn.Linear(hidden_sizes[-1], output_dim)]
         self._model = nn.Sequential(*self._layers)
         # logstd bounds
-        init_max = torch.empty(1, state_dim, dtype=torch.float32).fill_(2.0)
-        init_min = torch.empty(1, state_dim, dtype=torch.float32).fill_(-10.0)
+        init_max = torch.empty(1, state_dim + with_reward, dtype=torch.float32).fill_(2.0)
+        init_min = torch.empty(1, state_dim + with_reward, dtype=torch.float32).fill_(-10.0)
         self._max_logstd = nn.Parameter(init_max)
         self._min_logstd = nn.Parameter(init_min)
 
@@ -221,12 +222,17 @@ class ProbDynamicsNetwork(nn.Module):
         action = torch.as_tensor(action, device=self._device, dtype=torch.float32)
         h = torch.cat([state, action], 1)
         h = self._model(h)
-        mean, log_std = torch.split(h, split_size_or_sections=[self._state_dim, self._state_dim], dim=-1)
-        # log_std = torch.tanh(log_std)
-        # log_std = LOG_STD_MIN + 0.5 * (10 - LOG_STD_MIN) * (log_std + 1)
+        mean, log_std = torch.split(h, split_size_or_sections=self._state_dim + self._with_reward, dim=-1)
         log_std = self._max_logstd - F.softplus(self._max_logstd - log_std)
         log_std = self._min_logstd + F.softplus(log_std - self._min_logstd)
         std = torch.exp(log_std)
+        if self._local_mode:
+            if self._with_reward:
+                s_p, reward = torch.split(mean, [self._state_dim, 1], dim=-1)
+                s_p = s_p + state
+                mean = torch.cat([s_p, reward], -1)
+            else:
+                mean = mean + state
         dist = Normal(loc=mean, scale=std)
         return dist, mean
 
@@ -245,10 +251,19 @@ class ProbDynamicsNetwork(nn.Module):
             action: Tensor,
             output: Tensor
     ) -> Tensor:
+        assert output.shape[-1] == self._state_dim + self._with_reward, 'Wrong target dimension!'
         dist, _ = self._get_output(state, action)
         output = torch.as_tensor(output, dtype=torch.float32, device=self._device)
         log_density = dist.log_prob(output)
         return log_density
+
+    @property
+    def max_logstd(self):
+        return self._max_logstd
+
+    @property
+    def min_logstd(self):
+        return self._min_logstd
 
 
 class CriticNetwork(nn.Module):

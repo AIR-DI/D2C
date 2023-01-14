@@ -5,7 +5,7 @@ from torch import Tensor
 from typing import Any, Union, Optional, Tuple, List
 from gym.spaces import Space, Box
 from d2c.envs import BaseEnv
-from d2c.envs.learned.dynamics import DYNA_MODULES_DICT
+from d2c.envs.learned.dynamics import DYNA_DICT
 from d2c.envs.learned.dynamics import make_dynamics
 
 
@@ -42,7 +42,7 @@ class LeaEnv(BaseEnv):
         super(LeaEnv, self).__init__()
         # The name of the dynamics type.
         self._dyna_type = self._env_cfg.learned.dynamic_module_type
-        self._dyna_module = DYNA_MODULES_DICT[self._dyna_type]
+        self._dyna_module = DYNA_DICT[self._dyna_type]
         self._with_reward = self._env_cfg.learned.with_reward  # If the dynamics will predict the reward or not.
         self._dynamics_model = None
         self._d_fns = None
