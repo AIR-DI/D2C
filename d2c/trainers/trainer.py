@@ -71,19 +71,22 @@ class Trainer(BaseTrainer):
         d_ckpt_dir = self._train_cfg.dynamics_ckpt_dir
         train_summary_writer, train_summary_dir = self.check_ckpt(d_ckpt_dir)
         logger_name = '(Dyna)' + self._model_cfg.train.wandb.name
-        _config = self._model_cfg.env.learned
-        for k in _config.keys():
+        _config = copy.deepcopy(self._model_cfg.env.learned)
+        _keys = list(_config.keys())
+        for k in _keys:
             _config.pop(k) if k not in ['dynamic_module_type', 'with_reward', _config.dynamic_module_type] else None
         wandb_logger = self._build_wandb_logger(dir_=train_summary_dir, name=logger_name, _config=_config)
         if train_summary_writer is not None:
             # Train the dynamics
             dyna = make_dynamics(self._config, self._train_data)
-            for i in range(self._train_steps):
+            step = dyna.global_step
+            while step < self._train_steps:
                 dyna.train_step()
-                if i % self._print_freq == 0:
+                step = dyna.global_step
+                if step % self._print_freq == 0:
                     dyna.test_step()
                     dyna.print_train_info()
-                if i % self._summary_freq == 0 or i == self._train_steps:
+                if step % self._summary_freq == 0 or step == self._train_steps:
                     dyna.test_step()
                     dyna.write_train_summary(train_summary_writer)
             dyna.save(d_ckpt_dir)

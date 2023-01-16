@@ -53,7 +53,9 @@ class ProbDyna(BaseDyna):
             loss = - log_pi_s2.mean()
             loss += 0.01 * d_fn.max_logstd.mean() - 0.01 * d_fn.min_logstd.mean()
             losses.append(loss)
-        loss = torch.add(*losses)
+        loss = 0
+        for l in losses:
+            loss = loss + l
         info = collections.OrderedDict()
         info['d_loss(-log_prob)'] = loss
         return loss, info
@@ -84,9 +86,9 @@ class ProbDyna(BaseDyna):
                     test_mse[j].append(_loss_mse)
                     test_neg_log_prob[j].append(_loss_neg_log_prob)
             test_mse = [torch.as_tensor(x).mean() for x in test_mse]
-            test_mse = torch.add(*test_mse)
+            test_mse = torch.sum(torch.as_tensor(test_mse))
             test_neg_log_prob = [torch.as_tensor(x).mean() for x in test_neg_log_prob]
-            test_neg_log_prob = torch.add(*test_neg_log_prob)
+            test_neg_log_prob = torch.sum(torch.as_tensor(test_neg_log_prob))
             info = collections.OrderedDict()
             info['test(mse)'] = test_mse
             info['test(-log_prob)'] = test_neg_log_prob
@@ -115,6 +117,7 @@ class ProbDyna(BaseDyna):
         modules = utils.Flags(
             n_d_fns=n_d_fns,
             d_net_factory=d_net_factory,
+            device=self._device,
         )
         return modules
 

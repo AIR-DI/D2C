@@ -28,7 +28,7 @@ def main():
         'train.seed': 0,
         'train.total_train_steps': 1000000,
         'train.batch_size': 256,
-        'train.agent_ckpt_name': '230114'
+        'train.dynamics_ckpt_name': 'dyna-0116'
     })
     wandb = {
         'project': 'test-dyna',
@@ -37,11 +37,12 @@ def main():
         'mode': 'online'
     }
     command_args.update({'train.wandb': wandb})
-    command_args.update({'model.dyna.train_schedule': ['d']})
+    command_args.update({'model.dyna.train_schedule': ['d'],
+                         'env.learned.dynamic_module_type': 'prob'})
 
     config = make_config(command_args)
     model_name = config.model_config.model.model_name
-    config.model[model_name].train_schedule = ['d']
+    config.model_config.model[model_name].train_schedule = ['d']
 
     bm_data = Data(config)
     data = bm_data.data

@@ -64,6 +64,8 @@ class BaseDyna(ABC):
         self._device = device
         self._modules = self._get_modules()
         self._build_dyna()
+        if train_data is not None:
+            self._train_test_split()
 
     def _build_dyna(self):
         """Builds dynamics components."""
