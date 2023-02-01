@@ -37,8 +37,7 @@ def main():
         'mode': 'online'
     }
     command_args.update({'train.wandb': wandb})
-    command_args.update({'model.dyna.train_schedule': ['d'],
-                         'env.learned.dynamic_module_type': 'prob'})
+    command_args.update({'env.learned.dynamic_module_type': 'prob'})
 
     config = make_config(command_args)
     model_name = config.model_config.model.model_name

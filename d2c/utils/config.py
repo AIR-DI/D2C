@@ -152,7 +152,7 @@ class ConfigBuilder:
 
         _dict.update(env_external=_model_cfg.env.external)
 
-        train_params = ['device', 'train_test_ratio', 'batch_size',
+        train_params = ['device', 'test_data_ratio', 'batch_size',
                         'update_freq', 'update_rate', 'discount',
                         'total_train_steps', 'seed', 'action_noise']
         for k in train_params:
