@@ -495,6 +495,7 @@ class H2OAgent(BaseAgent):
 
     def save(self, ckpt_name: str) -> None:
         torch.save(self._agent_module.state_dict(), ckpt_name + '.pth')
+        torch.save(self._agent_module.q_nets.state_dict(), ckpt_name + '_q.pth')
         torch.save(self._agent_module.p_net.state_dict(), ckpt_name + '_policy.pth')
         # torch.save(self._agent_module.dsa_net.state_dict(), ckpt_name + '_dsa.pth')
         # torch.save(self._agent_module.dsas_net.state_dict(), ckpt_name + '_dsa.pth')
