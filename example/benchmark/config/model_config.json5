@@ -46,12 +46,12 @@
     basic_info: {state_dim: null, state_min: null, state_max: null,
       action_dim: null, action_min: null, action_max: null},
     // Parameters for Env which is provided externally
-    external: {benchmark_name: 'd4rl', data_source: 'mujoco', env_name: 'Hopper-v2', data_name: 'hopper_random-v1',
+    external: {benchmark_name: 'd4rl', data_source: 'mujoco', env_name: 'Hopper-v2', data_name: 'hopper_random-v2',
     data_file_path: null, state_normalize: false, reward_normalize: false, num_transitions: -1,
     score_normalize: false, score_norm_min: null, score_norm_max: null},
     learned: {
       // 'mlp', 'prob', 'rnn', 'adm'
-      dynamic_module_type: 'mlp',
+      dynamic_module_type: 'prob',
       // If the dynamics predict the reward or not.
       with_reward: true,
       // parameters for each type of dynmamics models
@@ -100,6 +100,11 @@
     log_dir: 'eval',
     start: 0.,
     steps: 100,
+    ope: {
+      fqe: {train_steps: 250000, model_params: [[1024, 1024, 1024, 1024], 1], optimizers: ['adam', 1e-4],
+      update_freq: 100, update_rate: 1, start: 0, eval_steps: 100},
+      mb_ope: {discount: 0.99, episode_steps: 30, start: 0, eval_steps: 100}
+    }
   },
   interface: {
     policy_file: null,

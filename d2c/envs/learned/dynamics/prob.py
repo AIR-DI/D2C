@@ -125,15 +125,16 @@ class ProbDyna(BaseDyna):
             self,
             s: Union[np.ndarray, Tensor],
             a: Union[np.ndarray, Tensor]
-    ) -> Tuple[List, List]:
+    ) -> Tuple[List, Dict]:
         s = torch.as_tensor(s, device=self._device, dtype=torch.float32)
         a = torch.as_tensor(a, device=self._device, dtype=torch.float32)
         s_pred, s_dist = [], []
-        for d_fn in self._d_fns:
-            _mean, _, _dist = d_fn(s, a)
-            s_pred.append(_mean)
-            s_dist.append(_dist)
-        return s_pred, s_dist
+        with torch.no_grad():
+            for d_fn in self._d_fns:
+                _mean, _, _dist = d_fn(s, a)
+                s_pred.append(_mean)
+                s_dist.append(_dist)
+        return s_pred, {'dist': s_dist}
 
 
 class DynaModule(BaseDynaModule):

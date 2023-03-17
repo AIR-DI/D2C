@@ -59,11 +59,11 @@ class TestDataLoader:
         reward_scaler = 'min_max'
         r_scaler_params = None
 
-        def r_fn(s1, s2, a1, a2):
-            return np.random.random(s1.shape[0])
+        def r_fn(past_a, s, a, next_s):
+            return np.random.random(s.shape[0])
 
-        def d_fn(s1, s2, a1, a2):
-            return np.zeros(s1.shape[0])
+        def d_fn(past_a, s, a, next_s):
+            return np.zeros(s.shape[0])
 
         app_dataloader1 = AppDataLoader(
             file_path=file_path,

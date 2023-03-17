@@ -65,3 +65,12 @@ def add_gaussian_noise(data: np.ndarray, space: Union[Box, Space], std: float) -
     noise = space.high * np.random.normal(loc=0, scale=std, size=data.shape)
     return np.clip(data + noise, space.low, space.high)
 
+
+def to_array_as(x, y):
+    if isinstance(x, torch.Tensor) and isinstance(y, np.ndarray):
+        return x.detach().cpu().numpy().astype(y.dtype)
+    elif isinstance(x, np.ndarray) and isinstance(y, torch.Tensor):
+        return torch.as_tensor(x).to(y)
+    else:
+        return x
+

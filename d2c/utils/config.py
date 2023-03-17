@@ -5,9 +5,10 @@ import copy
 import json5
 import logging
 import importlib
+import inspect
 import numpy as np
 from easydict import EasyDict
-from typing import Union, Optional, Dict, Any, Tuple, Generator
+from typing import Union, Optional, Dict, Any, Tuple, Generator, Callable, List
 from d2c.utils.utils import Flags
 from d2c.envs import benchmark_env
 
@@ -99,6 +100,7 @@ class ConfigBuilder:
         self._exp_type = experiment_type
         self._check_command_args()
         self._app_cfg = app_config
+        self._check_app_config()
         self._model_cfg_path = model_config_path
         self._work_abs_dir = work_abs_dir
         self._env_info = None
@@ -112,6 +114,48 @@ class ConfigBuilder:
             _k = k.split('.')[0]
             if _k not in ['model', 'env', 'train', 'eval', 'interface']:
                 raise KeyError(f'The key {_k} is not in the model_config!')
+
+    def _check_app_config(self) -> None:
+        """Check the elements in app_config."""
+        essential_attrs = [
+            'state_indices',
+            'action_indices',
+        ]
+        optional_attrs = [
+            'state_scaler',
+            'state_scaler_params',
+            'action_scaler',
+            'action_scaler_params',
+            'reward_scaler',
+            'reward_scaler_params',
+            'reward_fn',
+            'cost_fn',
+            'done_fn',
+        ]
+
+        for attr in essential_attrs:
+            if not hasattr(self._app_cfg, attr):
+                raise AttributeError(f'The app_config lacks the essential attribute named {attr}!')
+
+        miss_attrs = []
+        for attr in optional_attrs:
+            if not hasattr(self._app_cfg, attr):
+                setattr(self._app_cfg, attr, None)
+                miss_attrs.append(attr)
+        if len(miss_attrs) > 0:
+            logging.warning(f'The app_config lacks the attributes: {miss_attrs} and all of them have been set to None.')
+
+        def inspect_fn_params(fn: Callable) -> List[str]:
+            sig = inspect.signature(fn)
+            return [x for x in sig.parameters.keys()]
+
+        for fn_name in ['reward_fn', 'cost_fn', 'done_fn']:
+            fn = getattr(self._app_cfg, fn_name)
+            if fn is not None and isinstance(fn, Callable):
+                params = inspect_fn_params(fn)
+                params_required = ['past_a', 's', 'a', 'next_s']
+                assert params == params_required, f'The parameters of the function {fn_name} should be set like ' \
+                                                  f'{params_required}!'
 
     def _update_model_cfg(self) -> None:
         self._model_cfg = update_config(self._model_cfg_path, self._command_args)
@@ -143,6 +187,7 @@ class ConfigBuilder:
 
         :param dict _model_cfg: the model_config.
         """
+        _model_cfg = copy.deepcopy(_model_cfg)
         _dict = {}
         _dict.update(model_name=_model_cfg.model.model_name)
         model_hyper_params = _model_cfg.model[_dict['model_name']].hyper_params

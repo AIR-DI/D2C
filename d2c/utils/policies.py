@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from torch import nn, Tensor
 from typing import Union
+from d2c.utils.utils import to_array_as
 
 
 class DeterministicPolicy(nn.Module):
@@ -16,7 +17,7 @@ class DeterministicPolicy(nn.Module):
     def forward(self, observation: Union[np.ndarray, Tensor]) -> np.ndarray:
         with torch.no_grad():
             action = self._a_network(observation)
-        return action.cpu().numpy()
+        return to_array_as(action, observation)
 
 
 class DeterministicSoftPolicy(nn.Module):
@@ -29,4 +30,4 @@ class DeterministicSoftPolicy(nn.Module):
     def forward(self, observation: Union[np.ndarray, Tensor]) -> np.ndarray:
         with torch.no_grad():
             action = self._a_network(observation)[0]
-        return action.cpu().numpy()
+        return to_array_as(action, observation)

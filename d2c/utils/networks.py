@@ -270,9 +270,11 @@ class CriticNetwork(nn.Module):
     """Critic Network.
 
     :param Box observation_space: the observation space information. It is an instance
-        of class: ``gym.spaces.Box``.
+        of class: ``gym.spaces.Box``. `observation_space` can also be an integer which
+        represents the dimension of the observation.
     :param Box action_space: the action space information. It is an instance
-        of class: ``gym.spaces.Box``.
+        of class: ``gym.spaces.Box``. `action_space` can also be an integer which
+        represents the dimension of the action.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
     :param device: which device to create this model on. Default to 'cpu'.
@@ -280,15 +282,21 @@ class CriticNetwork(nn.Module):
 
     def __init__(
             self,
-            observation_space: Union[Box, Space],
-            action_space: Union[Box, Space],
+            observation_space: Union[Box, Space, int],
+            action_space: Union[Box, Space, int],
             fc_layer_params: Sequence[int] = (),
             device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
         super(CriticNetwork, self).__init__()
         self._device = device
-        state_dim = observation_space.shape[0]
-        action_dim = action_space.shape[0]
+        if isinstance(observation_space, int):
+            state_dim = observation_space
+        else:
+            state_dim = observation_space.shape[0]
+        if isinstance(action_space, int):
+            action_dim = action_space
+        else:
+            action_dim = action_space.shape[0]
         self._layers = []
         hidden_sizes = [state_dim + action_dim] + list(fc_layer_params)
         for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):

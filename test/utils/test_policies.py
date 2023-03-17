@@ -42,7 +42,7 @@ class TestPolicies:
         )
         for s in [self.s1, self.s2]:
             a = det_policy(s)
-            assert isinstance(a, np.ndarray)
+            assert isinstance(a, type(s))
             assert a.shape == (self.batch_size, self.a_dim)
 
     def test_det_soft_policy(self):
@@ -51,7 +51,7 @@ class TestPolicies:
         )
         for s in [self.s1, self.s2]:
             a = det_soft_policy(s)
-            assert isinstance(a, np.ndarray)
+            assert isinstance(a, type(s))
             assert a.shape == (self.batch_size, self.a_dim)
 
 

@@ -43,6 +43,6 @@ app_config = Flags(
     reward_scaler_params=None,
     reward_fn=None,
     cost_fn=None,
-    done_fn=None,
+    done_fn=done_function,
 )
 

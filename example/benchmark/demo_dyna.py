@@ -18,7 +18,7 @@ def main():
         prefix + 'benchmark_name': 'd4rl',
         prefix + 'data_source': 'mujoco',
         prefix + 'env_name': 'Hopper-v2',
-        prefix + 'data_name': 'hopper_medium-v2',
+        prefix + 'data_name': 'hopper_medium_expert-v2',
         prefix + 'state_normalize': True,
         prefix + 'score_normalize': True,
     }
@@ -28,11 +28,11 @@ def main():
         'train.seed': 0,
         'train.total_train_steps': 1000000,
         'train.batch_size': 256,
-        'train.dynamics_ckpt_name': 'dyna-0116'
+        'train.dynamics_ckpt_name': 'dyna-train_1m'
     })
     wandb = {
-        'project': 'test-dyna',
-        'name': 'test-hopper_medium',
+        'project': 'Train-Dyna',
+        'name': 'hopper_medium_expert-train_1m',
         'reinit': False,
         'mode': 'online'
     }

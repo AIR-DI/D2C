@@ -231,7 +231,7 @@ class AppDataLoader(BaseDataLoader):
         s2 = np.delete(s2, t_delete, axis=0)
         a1 = np.delete(a1, t_delete, axis=0)
         a2 = np.delete(a2, t_delete, axis=0)
-        reward, cost, done = self._get_reward(s1, s2, a1, a2, t_delete)
+        reward, cost, done = self._get_reward(s1, s2, a1, t_delete)
         logging.info('\n' + '='*20 + f'Constructing the transitions.' + '='*20 + '\n'
                      f'The deleted data size is {len(t_delete)}.' + '\n')
         return s1, s2, a1, a2, reward, cost, done
@@ -241,7 +241,6 @@ class AppDataLoader(BaseDataLoader):
             s1: np.ndarray,
             s2: np.ndarray,
             a1: np.ndarray,
-            a2: np.ndarray,
             t_delete: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Computing the reward, cost and done values.
@@ -249,14 +248,15 @@ class AppDataLoader(BaseDataLoader):
         :param s1: State.
         :param s2: Next state.
         :param a1: Action.
-        :param a2: Next action.
         :param t_delete: The index for deleting the data.
         :return: The computed reward, cost and done.
         """
+        a0 = np.concatenate([a1[:1], a1[:-1]], axis=0)
+
         def compute_r(fn: Optional[Union[Callable, int]]) -> np.ndarray:
             if fn is not None:
                 if isinstance(fn, Callable):
-                    r = fn(s1=s1, s2=s2, a1=a1, a2=a2)
+                    r = fn(past_a=a0, s=s1, a=a1, next_s=s2)
                 elif isinstance(fn, int):
                     r = self._data.iloc[:, fn].to_numpy()
                     r = np.delete(r, t_delete, axis=0)

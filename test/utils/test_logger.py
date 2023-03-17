@@ -8,7 +8,7 @@ from d2c.utils.logger import write_summary_tensorboard, WandbLogger
 
 class TestLogger:
 
-    tmp_dir = './tmp'
+    tmp_dir = 'temp'
     if not os.path.exists(tmp_dir):
         os.mkdir(tmp_dir)
 

@@ -7,6 +7,7 @@ from gym.spaces import Space, Box
 from d2c.envs import BaseEnv
 from d2c.envs.learned.dynamics import DYNA_DICT
 from d2c.envs.learned.dynamics import make_dynamics
+from d2c.utils import utils
 
 
 class LeaEnv(BaseEnv):
@@ -43,7 +44,7 @@ class LeaEnv(BaseEnv):
         # The name of the dynamics type.
         self._dyna_type = self._env_cfg.learned.dynamic_module_type
         self._dyna_module = DYNA_DICT[self._dyna_type]
-        self._with_reward = self._env_cfg.learned.with_reward  # If the dynamics will predict the reward or not.
+        self._with_reward = self._env_cfg.learned.with_reward  # If the dynamics predict the reward or not.
         self._dynamics_model = None
         self._d_fns = None
         if not self._with_reward:
@@ -86,13 +87,11 @@ class LeaEnv(BaseEnv):
     ) -> Union[List, Tuple[List, List[Tuple]]]:
         s_ = torch.as_tensor(s, device=self._device, dtype=torch.float32)
         a_ = torch.as_tensor(a, device=self._device, dtype=torch.float32)
-        s_p = self._d_fns(s_, a_)
+        s_p, info = self._d_fns(s_, a_)
         s_dist = None
-        if self._dyna_type == 'prob':
-            s_dist = [(x[0].cpu().numpy(), x[1].cpu().numpy()) for x in s_p]
-            s_p = [np.random.normal(loc=dist[0], scale=dist[1]) for dist in s_dist]
-        else:
-            s_p = [x.cpu().numpy() for x in s_p]
+        if 'dist' in info:
+            s_dist = info['dist']
+        s_p = [x.cpu().numpy() for x in s_p]
         if return_dist:
             # assert s_dist is not None
             return s_p, s_dist
@@ -116,7 +115,7 @@ class LeaEnv(BaseEnv):
         :param int seed: seed for random number generator(s)
         :param bool return_info:
         :param dict options: a dict contain ``init_s`` and ``warm_input``.
-            ``init_s`` is the initial state. For RNN dynamics, ``init_s`` is the
+            ``init_s``(np.ndarray or Tensor) is the initial state. For RNN dynamics, ``init_s`` is the
             state that is just following the warm_input. ``warm_input``:
             the warm-up input for LSTM dynamics model.
         :return: the initial observation.
@@ -128,7 +127,7 @@ class LeaEnv(BaseEnv):
         warm_input = options.get('warm_input')
         self.state = np.zeros((1, self._s_dim), dtype='float32')
         if init_s is not None:
-            self.state = np.array(init_s)
+            self.state = utils.to_array_as(init_s, self.state)
             assert len(self.state.shape) == 2
         # Judge that if the dynamics is an RNN model.
         if 'rnn' in self._dyna_type:

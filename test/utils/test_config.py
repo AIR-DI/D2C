@@ -49,6 +49,7 @@ class TestCfg:
         )
         config = cfg_builder.build_config()
         assert np.all(config.app_config.state_indices == np.arange(10))
+        assert hasattr(config.app_config, 'reward_fn')
 
 
 def test_flat_dict():
