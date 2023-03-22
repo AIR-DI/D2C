@@ -1,6 +1,4 @@
 """The base class of RL agent."""
-from collections import OrderedDict
-
 import torch
 import collections
 import logging
@@ -100,7 +98,6 @@ class BaseAgent(ABC):
         """Build all the models of this RL algorithm."""
         pass
 
-    @abstractmethod
     def _init_vars(self):
         """Initialize the variables of all models."""
         pass

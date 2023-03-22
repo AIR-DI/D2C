@@ -1,22 +1,26 @@
-from typing import Union, Any, Callable
+from typing import Union, Any, Dict, Type
 from d2c.envs.learned.dynamics.base import BaseDyna
 from d2c.envs.learned.dynamics.mlp import MlpDyna
+from d2c.envs.learned.dynamics.prob import ProbDyna
 from d2c.utils.replaybuffer import ReplayBuffer
 from d2c.utils.utils import Flags
 
 
-DYNA_MODULES_DICT = {
-    'mlp': MlpDyna,
-}
+DYNA_DICT: Dict[str, Type[BaseDyna]] = {}
 
 
-def get_dyna(model_name: str) -> Callable[..., BaseDyna]:
-    """Get the dynamics.
+def register_dyna(cls: Type[BaseDyna]) -> None:
+    """Registering the dynamics class.
 
-    :param str model_name: the name of the dynamics model.
-    :return: a dynamics class according to the input.
+    :param cls: Dynamics class inheriting ``BaseDyna``.
     """
-    return DYNA_MODULES_DICT[model_name]
+    is_registered = cls.TYPE in DYNA_DICT
+    assert not is_registered, f'{cls.TYPE} seems to be already registered.'
+    DYNA_DICT[cls.TYPE] = cls
+
+
+register_dyna(ProbDyna)
+register_dyna(MlpDyna)
 
 
 def make_dynamics(
@@ -40,13 +44,13 @@ def make_dynamics(
         train_data=data,
         batch_size=model_cfg.train.batch_size,
         weight_decays=model_cfg.train.weight_decays,
-        train_test_ratio=model_cfg.train.train_test_ratio,
+        test_data_ratio=model_cfg.train.test_data_ratio,
         with_reward=model_cfg.env.learned.with_reward,
         device=model_cfg.train.device,
     )
     dyna_args.update(dyna_params)
 
-    dyna = get_dyna(dyna_name)(**dyna_args)
+    dyna = DYNA_DICT[dyna_name](**dyna_args)
     if restore:
         dyna.restore(model_cfg.train.dynamics_ckpt_dir)
 

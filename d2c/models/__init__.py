@@ -6,12 +6,16 @@ from d2c.models.base import BaseAgent
 from d2c.models.model_free.td3_bc import TD3BCAgent
 from d2c.models.model_free.doge import DOGEAgent
 from d2c.models.model_free.h2o import H2OAgent
+from d2c.models.imitation.dmil import DMILAgent
+from d2c.models.imitation.bc import BCAgent
 
 
 AGENT_MODULES_DICT = {
     'td3_bc': TD3BCAgent,
     'doge': DOGEAgent,
-    'h2o': H2OAgent
+    'h2o': H2OAgent,
+    'dmil': DMILAgent,
+    'bc': BCAgent,
 }
 
 
@@ -26,7 +30,7 @@ def get_agent(model_name: str) -> Callable[..., BaseAgent]:
         The input name should be in the keys of dict ``AGENT_MODULES_DICT``:
 
         +------------------+------------------------------------------------+
-        |  Imitation       |  'bc',                                         |
+        |  Imitation       |  'bc', 'dmil'                                        |
         +------------------+------------------------------------------------+
         |  Planning        |  'mopp'                                        |
         +------------------+------------------------------------------------+
@@ -64,16 +68,19 @@ def make_agent(
     model_name = model_cfg.model.model_name
     agent_config = model_cfg.model[model_name]
     # An empty buffer.
-    if config.model_config.train.model_buffer_size is not None:
-        _max_size = config.model_config.train.model_buffer_size
+    if data is not None:
+        if config.model_config.train.model_buffer_size is not None:
+            _max_size = config.model_config.train.model_buffer_size
+        else:
+            _max_size = data.capacity
+        model_buffer = ReplayBuffer(
+            state_dim=model_cfg.env.basic_info.state_dim,
+            action_dim=model_cfg.env.basic_info.action_dim,
+            max_size=_max_size,
+            device=model_cfg.train.device,
+        )
     else:
-        _max_size = data.capacity
-    model_buffer = ReplayBuffer(
-        state_dim=model_cfg.env.basic_info.state_dim,
-        action_dim=model_cfg.env.basic_info.action_dim,
-        max_size=_max_size,
-        device=model_cfg.train.device,
-    )
+        model_buffer = None
     agent_args = dict(
         env=env,
         train_data=data,
@@ -90,6 +97,7 @@ def make_agent(
     agent = get_agent(model_name)(**agent_args)
     if restore_agent:
         agent.restore(model_cfg.train.agent_ckpt_dir)
+        print('\n' + '='*20 + f'Restoring the agent from {model_cfg.train.agent_ckpt_dir}.' + '='*20 + '\n')
     return agent
 
 

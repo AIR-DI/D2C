@@ -46,6 +46,7 @@ class ReplayBuffer:
             done=self._done,
             dsc=self._dsc,
         )
+        self._shuffle_indices = None
 
     def add(
             self,
@@ -114,8 +115,8 @@ class ReplayBuffer:
             action: Union[np.ndarray, torch.Tensor],
             next_state: Union[np.ndarray, torch.Tensor],
             next_action: Union[np.ndarray, torch.Tensor],
-            reward: Union[np.ndarray, torch.Tensor],
-            done: Union[np.ndarray, torch.Tensor],
+            reward: Union[np.ndarray, torch.Tensor] = None,
+            done: Union[np.ndarray, torch.Tensor] = None,
             cost: Union[np.ndarray, torch.Tensor] = None
     ) -> None:
         """Add a batch of transitions into the buffer.
@@ -131,6 +132,10 @@ class ReplayBuffer:
         batch_size = state.shape[0]
         if cost is None:
             cost = torch.zeros(batch_size, dtype=torch.float32, device=self._device)
+        if reward is None:
+            reward = torch.zeros(batch_size, dtype=torch.float32, device=self._device)
+        if done is None:
+            done = torch.zeros(batch_size, dtype=torch.float32, device=self._device)
         transitions = OrderedDict(
             s1=state,
             a1=action,
@@ -188,4 +193,12 @@ class ReplayBuffer:
     def size(self) -> int:
         """The number of the transitions in the replay buffer."""
         return self._size
+
+    @property
+    def shuffle_indices(self) -> np.ndarray:
+        """Returning the shuffled indices of the transitions in the buffer."""
+        if self._shuffle_indices is None:
+            assert self._size > 0, 'There is no data in buffer!'
+            self._shuffle_indices = np.random.permutation(self._size)
+        return self._shuffle_indices
 

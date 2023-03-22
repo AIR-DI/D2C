@@ -2,8 +2,8 @@ import pytest
 import torch
 import numpy as np
 from gym.spaces import Box
-from d2c.utils.policies import DeterministicPolicy
-from d2c.utils.networks import ActorNetworkDet
+from d2c.utils.policies import DeterministicPolicy, DeterministicSoftPolicy
+from d2c.utils.networks import ActorNetworkDet, ActorNetwork
 
 
 class TestPolicies:
@@ -29,12 +29,29 @@ class TestPolicies:
         device=device,
     ).to(device)
 
+    actor = ActorNetwork(
+        observation_space=obs_space,
+        action_space=act_space,
+        fc_layer_params=layer,
+        device=device,
+    ).to(device)
+
     def test_det_policy(self):
         det_policy = DeterministicPolicy(
             self.actor_det
         )
         for s in [self.s1, self.s2]:
             a = det_policy(s)
-            assert isinstance(a, np.ndarray)
+            assert isinstance(a, type(s))
             assert a.shape == (self.batch_size, self.a_dim)
+
+    def test_det_soft_policy(self):
+        det_soft_policy = DeterministicSoftPolicy(
+            self.actor,
+        )
+        for s in [self.s1, self.s2]:
+            a = det_soft_policy(s)
+            assert isinstance(a, type(s))
+            assert a.shape == (self.batch_size, self.a_dim)
+
 

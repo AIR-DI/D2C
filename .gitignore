@@ -7,8 +7,10 @@ example/benchmark/data/d4rl/datasets/
 /example/benchmark/models/*
 __pycache__
 .idea
-/test/utils/tmp/*
-/test/evaluators/sim/temp/*
+/test/utils/temp/*
+/test/utils/temp/*
+/test/data/temp/*
+/test/evaluators/*/temp/*
 /test/models/model_free/temp/*
 /test/trainers/temp/*
 example/benchmark/nohup.out

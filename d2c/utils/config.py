@@ -1,11 +1,14 @@
 """The general config that integrates the app_config and model_config"""
 
 import os
+import copy
 import json5
+import logging
 import importlib
+import inspect
 import numpy as np
 from easydict import EasyDict
-from typing import Union, Optional, Dict, Any, Tuple
+from typing import Union, Optional, Dict, Any, Tuple, Generator, Callable, List
 from d2c.utils.utils import Flags
 from d2c.envs import benchmark_env
 
@@ -58,6 +61,16 @@ def update_nested_dict_by_dict(
     return to_dict
 
 
+def flat_dict(x: Dict) -> Generator:
+    for key, value in x.items():
+        if isinstance(value, dict):
+            for k, v in flat_dict(value):
+                k = '.'.join([key, k])
+                yield k, v
+        else:
+            yield key, value
+
+
 class ConfigBuilder:
     """Builder the complete configuration with app_config and model_config, and set the parameters
     according to the CLI input.
@@ -71,19 +84,23 @@ class ConfigBuilder:
     :param str model_config_path: the absolute path of the work dir that contains the \
         `run` script, `data` dir and `models` dir.
     :param dict command_args: the CLI parameters input;
+    :param str experiment_type: the available options are `['benchmark', 'application']`.
     :return: a complete configuration that can be used by main function.
     """
 
     def __init__(
             self,
-            app_config: Flags,
+            app_config: Any,
             model_config_path: str,
             work_abs_dir: str,
-            command_args: Optional[Dict] = None
+            command_args: Optional[Dict] = None,
+            experiment_type: str = 'benchmark',
     ) -> None:
         self._command_args = command_args
+        self._exp_type = experiment_type
         self._check_command_args()
         self._app_cfg = app_config
+        self._check_app_config()
         self._model_cfg_path = model_config_path
         self._work_abs_dir = work_abs_dir
         self._env_info = None
@@ -98,6 +115,48 @@ class ConfigBuilder:
             if _k not in ['model', 'env', 'train', 'eval', 'interface']:
                 raise KeyError(f'The key {_k} is not in the model_config!')
 
+    def _check_app_config(self) -> None:
+        """Check the elements in app_config."""
+        essential_attrs = [
+            'state_indices',
+            'action_indices',
+        ]
+        optional_attrs = [
+            'state_scaler',
+            'state_scaler_params',
+            'action_scaler',
+            'action_scaler_params',
+            'reward_scaler',
+            'reward_scaler_params',
+            'reward_fn',
+            'cost_fn',
+            'done_fn',
+        ]
+
+        for attr in essential_attrs:
+            if not hasattr(self._app_cfg, attr):
+                raise AttributeError(f'The app_config lacks the essential attribute named {attr}!')
+
+        miss_attrs = []
+        for attr in optional_attrs:
+            if not hasattr(self._app_cfg, attr):
+                setattr(self._app_cfg, attr, None)
+                miss_attrs.append(attr)
+        if len(miss_attrs) > 0:
+            logging.warning(f'The app_config lacks the attributes: {miss_attrs} and all of them have been set to None.')
+
+        def inspect_fn_params(fn: Callable) -> List[str]:
+            sig = inspect.signature(fn)
+            return [x for x in sig.parameters.keys()]
+
+        for fn_name in ['reward_fn', 'cost_fn', 'done_fn']:
+            fn = getattr(self._app_cfg, fn_name)
+            if fn is not None and isinstance(fn, Callable):
+                params = inspect_fn_params(fn)
+                params_required = ['past_a', 's', 'a', 'next_s']
+                assert params == params_required, f'The parameters of the function {fn_name} should be set like ' \
+                                                  f'{params_required}!'
+
     def _update_model_cfg(self) -> None:
         self._model_cfg = update_config(self._model_cfg_path, self._command_args)
         self._env_info = self._get_env_info()
@@ -105,8 +164,14 @@ class ConfigBuilder:
         self._update_env_info()
         # create all the models saving paths
         self._update_model_dir()
-        print('=' * 10 + 'The config of this experiment' + '=' * 10)
-        print(json5.dumps(self._model_cfg, indent=2, ensure_ascii=False))
+        logging.debug('=' * 20 + 'The config of this experiment' + '=' * 20)
+        _m_cfg = copy.deepcopy(self._model_cfg)
+        _dict = {}
+        for k, v in flat_dict(_m_cfg):
+            if isinstance(v, np.ndarray):
+                _dict.update({k: v.tolist()})
+        _m_cfg = update_nested_dict_by_dict(_dict, _m_cfg)
+        logging.debug(json5.dumps(_m_cfg, indent=2, ensure_ascii=False))
 
     def build_config(self) -> Flags:
         """The API to build the final config."""
@@ -122,58 +187,86 @@ class ConfigBuilder:
 
         :param dict _model_cfg: the model_config.
         """
+        _model_cfg = copy.deepcopy(_model_cfg)
         _dict = {}
         _dict.update(model_name=_model_cfg.model.model_name)
         model_hyper_params = _model_cfg.model[_dict['model_name']].hyper_params
-        model_hyper_params['model_params'] = str(model_hyper_params.model_params)
-        model_hyper_params['optimizers'] = str(model_hyper_params.optimizers)
+        for k, v in model_hyper_params.items():
+            model_hyper_params[k] = str(v)
         _dict.update(model_hyper_params)
 
         _dict.update(env_external=_model_cfg.env.external)
 
-        train_params = ['device', 'train_test_ratio', 'batch_size',
+        train_params = ['device', 'test_data_ratio', 'batch_size',
                         'update_freq', 'update_rate', 'discount',
-                        'total_train_steps', 'seed']
+                        'total_train_steps', 'seed', 'action_noise']
         for k in train_params:
             _dict.update({k: _model_cfg.train[k]})
 
-        print('='*10 + 'The main hyperparameters of this experiment' + '='*10)
+        print('='*20 + 'The main hyperparameters of this experiment' + '='*20)
+        _d = {}
+        for k, v in flat_dict(_dict):
+            if isinstance(v, np.ndarray):
+                _d.update({k: v.tolist()})
+        _dict = update_nested_dict_by_dict(_d, _dict)
         print(json5.dumps(_dict, indent=2, ensure_ascii=False))
 
         return _dict
 
     def _get_env_info(self) -> Flags:
-        try:
-            self._env_ext = self._model_cfg.env.external
-            # sys.path.append('../../example/benchmark/')
-            import_path = '.'.join(('example.benchmark.data', self._env_ext.benchmark_name, self._env_ext.data_source))
-            module = importlib.import_module(import_path)
-            domain = self._env_ext.env_name.split('-')[0]
-            env_info = Flags(
-                norm_min=getattr(module, (domain + '_random_score').upper()),
-                norm_max=getattr(module, (domain + '_expert_score').upper()),
-                state_info=getattr(module, (domain + '_state').upper()),
-                action_info=getattr(module, (domain + '_action').upper()),
-            )
-        except:
-            benchmark_name = self._env_ext.benchmark_name
-            data_source = self._env_ext.data_source
-            env_name = self._env_ext.env_name
-            kwargs = dict()
-            if 'combined_challenge' in self._env_ext:
-                kwargs.update({'combined_challenge': self._env_ext.combined_challenge})
-            state_info, action_info = self._get_env_space(
-                benchmark_name,
-                data_source,
-                env_name,
-                **kwargs,
-            )
+        if self._exp_type == 'benchmark':
+            try:
+                self._env_ext = self._model_cfg.env.external
+                # sys.path.append('../../example/benchmark/')
+                import_path = '.'.join(('example.benchmark.data', self._env_ext.benchmark_name, self._env_ext.data_source))
+                module = importlib.import_module(import_path)
+                domain = self._env_ext.env_name.split('-')[0]
+                env_info = Flags(
+                    norm_min=getattr(module, (domain + '_random_score').upper()),
+                    norm_max=getattr(module, (domain + '_expert_score').upper()),
+                    state_info=getattr(module, (domain + '_state').upper()),
+                    action_info=getattr(module, (domain + '_action').upper()),
+                )
+            except:
+                benchmark_name = self._env_ext.benchmark_name
+                data_source = self._env_ext.data_source
+                env_name = self._env_ext.env_name
+                kwargs = dict()
+                if 'combined_challenge' in self._env_ext:
+                    kwargs.update({'combined_challenge': self._env_ext.combined_challenge})
+                state_info, action_info = self._get_env_space(
+                    benchmark_name,
+                    data_source,
+                    env_name,
+                    **kwargs,
+                )
+                env_info = Flags(
+                    norm_min=None,
+                    norm_max=None,
+                    state_info=state_info,
+                    action_info=action_info,
+                )
+        elif self._exp_type == 'application':
+            state_dim = len(self._app_cfg.state_indices)
+            if self._app_cfg.state_scaler == 'min_max':
+                state_min = 0.0
+                state_max = 1.0
+            else:
+                state_min, state_max = -np.inf, np.inf
+            action_dim = len(self._app_cfg.action_indices)
+            if self._app_cfg.action_scaler == 'min_max':
+                action_min = 0.0
+                action_max = 1.0
+            else:
+                action_min, action_max = -np.inf, np.inf
             env_info = Flags(
                 norm_min=None,
                 norm_max=None,
-                state_info=state_info,
-                action_info=action_info,
+                state_info=(state_dim, state_min, state_max),
+                action_info=(action_dim, action_min, action_max),
             )
+        else:
+            raise ValueError(f'The value of the parameter experiment_type is wrong!')
         return env_info
 
     def _get_env_space(
@@ -201,45 +294,64 @@ class ConfigBuilder:
         return state_info, action_info
 
     def _update_env_info(self) -> None:
-        # update env parameters
-        data_file_path = os.path.join(
-            self._work_abs_dir,
-            'data',
-            self._env_ext.benchmark_name,
-            self._env_ext.data_source,
-            self._env_ext.data_name
-        )
         # Update the env basic_info
+        self._update_env_basic_info()
+        if self._exp_type == 'benchmark':
+            # update env parameters
+            data_file_path = os.path.join(
+                self._work_abs_dir,
+                'data',
+                self._env_ext.benchmark_name,
+                self._env_ext.data_source,
+                self._env_ext.data_name
+            )
+            # Update the external env info
+            temp_dict = dict([('score_norm_min', self._env_info.norm_min),
+                              ('score_norm_max', self._env_info.norm_max),
+                              ('data_file_path', data_file_path)])
+            for k, v in temp_dict.items():
+                if self._model_cfg.env.external[k] is None:
+                    self._model_cfg.env.external[k] = v
+
+    def _update_env_basic_info(self) -> None:
+        state_dim = self._env_info.state_info[0]
+        state_min = self._env_info.state_info[1]
+        state_max = self._env_info.state_info[2]
+        action_dim = self._env_info.action_info[0]
+        action_min = self._env_info.action_info[1]
+        action_max = self._env_info.action_info[2]
+
         if not self._model_cfg.env.basic_info.state_dim:
-            self._model_cfg.env.basic_info.update(dict([('state_dim', self._env_info.state_info[0]),
-                                                        ('state_min', self._env_info.state_info[1]),
-                                                        ('state_max', self._env_info.state_info[2])]))
+            self._model_cfg.env.basic_info.update(dict([('state_dim', state_dim),
+                                                        ('state_min', state_min),
+                                                        ('state_max', state_max)]))
         if not self._model_cfg.env.basic_info.action_dim:
-            self._model_cfg.env.basic_info.update(dict([('action_dim', self._env_info.action_info[0]),
-                                                        ('action_min', self._env_info.action_info[1]),
-                                                        ('action_max', self._env_info.action_info[2])]))
-        # Update the external env info
-        temp_dict = dict([('score_norm_min', self._env_info.norm_min),
-                          ('score_norm_max', self._env_info.norm_max),
-                          ('data_file_path', data_file_path)])
-        for k, v in temp_dict.items():
-            if self._model_cfg.env.external[k] is None:
-                self._model_cfg.env.external[k] = v
+            self._model_cfg.env.basic_info.update(dict([('action_dim', action_dim),
+                                                        ('action_min', action_min),
+                                                        ('action_max', action_max)]))
 
     def _update_model_dir(self) -> None:
         """Construct the models' file path"""
         model_dir = self._model_cfg.train.model_dir
         model_name = self._model_cfg.model.model_name
-        model_dir = os.path.join(
-            self._work_abs_dir,
-            model_dir,
-            self._env_ext.benchmark_name,
-            self._env_ext.data_source,
-            model_name,
-            self._env_ext.env_name,
-            self._env_ext.data_name,
-            's_norm_'+str(self._env_ext.state_normalize),
-        )
+        if self._exp_type == 'benchmark':
+            model_dir = os.path.join(
+                self._work_abs_dir,
+                model_dir,
+                self._env_ext.benchmark_name,
+                self._env_ext.data_source,
+                model_name,
+                self._env_ext.env_name + '_' + self._env_ext.data_name,
+                # 's_norm_'+str(self._env_ext.state_normalize),
+            )
+        elif self._exp_type == 'application':
+            model_dir = os.path.join(
+                self._work_abs_dir,
+                model_dir,
+                model_name,
+            )
+        else:
+            raise ValueError(f'The value of the parameter experiment_type is wrong!')
 
         if not self._model_cfg.train.get('behavior_ckpt_dir'):
             behavior_ckpt_dir = os.path.join(

@@ -3,7 +3,9 @@
 import os
 import time
 import logging
-from typing import Any, Union, Optional, Callable
+import json5
+import copy
+from typing import Any, Union, Optional, Callable, Tuple, Dict
 from torch.utils.tensorboard import SummaryWriter
 from d2c.trainers.base import BaseTrainer
 from d2c.models import BaseAgent
@@ -52,7 +54,7 @@ class Trainer(BaseTrainer):
 
     def _train_behavior(self) -> None:
         b_ckpt_dir = self._train_cfg.behavior_ckpt_dir
-        train_summary_writer = self.check_ckpt(b_ckpt_dir)
+        train_summary_writer, _ = self.check_ckpt(b_ckpt_dir)
         if train_summary_writer is not None:
             # Train the behavior
             for i in range(self._train_steps):
@@ -67,25 +69,34 @@ class Trainer(BaseTrainer):
 
     def _train_dynamics(self) -> None:
         d_ckpt_dir = self._train_cfg.dynamics_ckpt_dir
-        train_summary_writer = self.check_ckpt(d_ckpt_dir)
+        train_summary_writer, train_summary_dir = self.check_ckpt(d_ckpt_dir)
+        logger_name = '(Dyna)' + self._model_cfg.train.wandb.name
+        _config = copy.deepcopy(self._model_cfg.env.learned)
+        _keys = list(_config.keys())
+        for k in _keys:
+            _config.pop(k) if k not in ['dynamic_module_type', 'with_reward', _config.dynamic_module_type] else None
+        wandb_logger = self._build_wandb_logger(dir_=train_summary_dir, name=logger_name, _config=_config)
         if train_summary_writer is not None:
             # Train the dynamics
             dyna = make_dynamics(self._config, self._train_data)
-            for i in range(self._train_steps):
+            step = dyna.global_step
+            while step < self._train_steps:
                 dyna.train_step()
-                if i % self._print_freq == 0:
+                step = dyna.global_step
+                if step % self._print_freq == 0:
                     dyna.test_step()
                     dyna.print_train_info()
-                if i % self._summary_freq == 0 or i == self._train_steps:
+                if step % self._summary_freq == 0 or step == self._train_steps:
                     dyna.test_step()
                     dyna.write_train_summary(train_summary_writer)
             dyna.save(d_ckpt_dir)
             train_summary_writer.close()
+            wandb_logger.finish()
         self._env.load()
 
     def _train_q(self) -> None:
         q_ckpt_dir = self._train_cfg.q_ckpt_dir
-        train_summary_writer = self.check_ckpt(q_ckpt_dir)
+        train_summary_writer, _ = self.check_ckpt(q_ckpt_dir)
         if train_summary_writer is not None:
             # Train the Q-value function
             for i in range(self._train_steps):
@@ -100,7 +111,7 @@ class Trainer(BaseTrainer):
 
     def _train_vae_s(self) -> None:
         vae_s_ckpt_dir = self._train_cfg.vae_s_ckpt_dir
-        train_summary_writer = self.check_ckpt(vae_s_ckpt_dir)
+        train_summary_writer, _ = self.check_ckpt(vae_s_ckpt_dir)
         if train_summary_writer is not None:
             for i in range(self._train_steps):
                 train_vae_s_info = self._agent.train_vae_s_step()
@@ -149,7 +160,7 @@ class Trainer(BaseTrainer):
         logging.info('Training finished, time cost %.4gs.', time_cost)
 
     @staticmethod
-    def check_ckpt(_model_ckpt_dir: str) -> Optional[SummaryWriter]:
+    def check_ckpt(_model_ckpt_dir: str) -> Tuple[Optional[SummaryWriter], str]:
         """Determine if the model files exist.
 
         When calling the :meth:`train` method, it will check if the models have been trained
@@ -171,7 +182,7 @@ class Trainer(BaseTrainer):
             train_summary_writer = SummaryWriter(
                 _train_summary_dir
             )
-        return train_summary_writer
+        return train_summary_writer, _train_summary_dir
 
     def _build_train_schedule(self) -> Callable:
         train_fn_dict = dict(
@@ -189,14 +200,20 @@ class Trainer(BaseTrainer):
 
         return custom_train
 
-    def _build_wandb_logger(self, dir_: Optional[str] = None, name: Optional[str] = None) -> WandbLogger:
-        _params = self._model_cfg.train.wandb
+    def _build_wandb_logger(
+            self,
+            dir_: Optional[str] = None,
+            name: Optional[str] = None,
+            _config: Optional[Dict] = None,
+    ) -> WandbLogger:
+        _params = copy.deepcopy(self._model_cfg.train.wandb)
         if dir_ is not None:
             utils.maybe_makedirs(dir_)
             _params.update(dir_=dir_)
         if name is not None:
             _params.update(name=name)
-        _config = ConfigBuilder.main_hyper_params(self._model_cfg)
+        if _config is None:
+            _config = ConfigBuilder.main_hyper_params(self._model_cfg)
         _params.update(config=_config)
         return WandbLogger(**_params)
 

@@ -88,12 +88,12 @@ class BMEval(BaseEval):
                 norm_results_episode_return.append(norm_mean)
                 norm_results_std.append(norm_std)
                 norm_complete_results.append(norm_comp_result)
-                infos[name]['episode_mean_norm'] = norm_mean
+                infos[name]['episode_mean_score_norm'] = norm_mean
             results_episode_return.append(mean)
             results_std.append(std)
             complete_results.append(comp_result)
             # infos[name] = collections.OrderedDict()
-            infos[name]['episode_mean'] = mean
+            infos[name]['episode_mean_score'] = mean
         results = [results_episode_return] \
                   + [results_std] \
                   + [complete_results] \
