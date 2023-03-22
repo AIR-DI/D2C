@@ -12,7 +12,6 @@ from torch import nn, Tensor
 from typing import Union, Tuple, Any, Sequence, Dict, Iterator
 from d2c.models.base import BaseAgent, BaseAgentModule
 from d2c.utils import networks, utils, policies
-import pdb
 
 LAMBDA_MIN = 1
 LAMBDA_MAX = 100
@@ -526,7 +525,7 @@ class H2OAgent(BaseAgent):
             )
 
         def dsa_net_factory():
-            return networks.ConcatDiscriminator(
+            return networks.ConcatClassifier(
                 input_dim=self._observation_space.shape[0] + self._action_space.shape[0],
                 output_dim=2,
                 fc_layer_params=model_params_dsa,
@@ -534,7 +533,7 @@ class H2OAgent(BaseAgent):
             )
             
         def dsas_net_factory():
-            return networks.ConcatDiscriminator(
+            return networks.ConcatClassifier(
                 input_dim=2 * self._observation_space.shape[0] + self._action_space.shape[0],
                 output_dim=2,
                 fc_layer_params=model_params_dsas,

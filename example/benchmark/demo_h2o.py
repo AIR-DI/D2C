@@ -13,7 +13,7 @@ from example.benchmark.config import make_config
 
 logging.basicConfig(level=logging.INFO)
 nowTime = datetime.datetime.now().strftime('%y-%m-%d-%H-%M-%S')
-import pdb
+
 
 def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
