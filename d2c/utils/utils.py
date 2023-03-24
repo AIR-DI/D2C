@@ -35,7 +35,7 @@ def get_optimizer(name: str) -> Callable:
         raise ValueError('Unknown optimizer %s.' % name)
     
 # generate xml assets path: gym_xml_path
-def generate_xml_path():
+def generate_xml_path() -> str:
     import os
     import gym
     xml_path = os.path.join(gym.__file__[:-11], 'envs/mujoco/assets')
@@ -49,14 +49,15 @@ def generate_xml_path():
 gym_xml_path = generate_xml_path()
 
 
-def update_xml(index, env_name):
+# update env xml with different dynamics
+def update_xml(index: str, env_name: str) -> None:
     xml_name = parse_xml_name(env_name)
     os.system('cp ./xml_path/{0}/{1} {2}/{1}}'.format(index, xml_name, gym_xml_path))
 
     time.sleep(0.2)
 
-
-def parse_xml_name(env_name):
+# translate env name into xml file name
+def parse_xml_name(env_name: str) -> str:
     if 'walker' in env_name.lower():
         xml_name = "walker2d.xml"
     elif 'hopper' in env_name.lower():
@@ -70,8 +71,8 @@ def parse_xml_name(env_name):
 
     return xml_name
 
-
-def update_target_env(env_name):
+# generate target env
+def update_target_env(env_name: str) -> None:
     xml_name = parse_xml_name(env_name)
 
     os.system(
@@ -80,7 +81,7 @@ def update_target_env(env_name):
     time.sleep(0.2)
 
 # change gravity
-def update_source_env_gravity(variety_degree, env_name):
+def update_source_env_gravity(variety_degree: float, env_name: str) -> None:
     old_xml_name = parse_xml_name(env_name)
     # create new xml 
     xml_name = "{}_gravityx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
@@ -114,7 +115,7 @@ def update_source_env_gravity(variety_degree, env_name):
     time.sleep(0.2)
 
 # change density
-def update_source_env_density(variety_degree, env_name):
+def update_source_env_density(variety_degree: float, env_name: str) -> None:
     old_xml_name = parse_xml_name(env_name)
     # create new xml 
     xml_name = "{}_densityx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
@@ -143,7 +144,7 @@ def update_source_env_density(variety_degree, env_name):
     time.sleep(0.2)
 
 # change friction
-def update_source_env_friction(variety_degree, env_name):
+def update_source_env_friction(variety_degree: float, env_name: str) -> None:
     old_xml_name = parse_xml_name(env_name)
     # create new xml 
     xml_name = "{}_frictionx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
