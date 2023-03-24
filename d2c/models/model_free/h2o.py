@@ -302,11 +302,11 @@ class H2OAgent(BaseAgent):
                 min_qf1_loss = alpha_prime * self._min_q_weight * (qf1_diff - self._cql_target_action_gap)
                 min_qf2_loss = alpha_prime * self._min_q_weight * (qf2_diff - self._cql_target_action_gap)
 
-                self.alpha_prime_optimizer.zero_grad()
+                self._alpha_prime_optimizer.zero_grad()
                 alpha_prime_loss = (- min_qf1_loss - min_qf2_loss) * 0.5
                 alpha_prime_loss.backward(retain_graph=True)
 
-                self.alpha_prime_optimizer.step()
+                self._alpha_prime_optimizer.step()
             else:
                 min_qf1_loss = qf1_diff * self._min_q_weight
                 min_qf2_loss = qf2_diff * self._min_q_weight
