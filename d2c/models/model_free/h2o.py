@@ -441,6 +441,7 @@ class H2OAgent(BaseAgent):
                     self._traj_steps += 1
                     state = self._current_state
                     _, action, _ = self._p_fn(state)
+                    action = action.cpu().numpy()
                     if self._joint_noise_std > 0:
                         next_state, reward, done, __ = self._env.step(
                             action + np.random.randn(action.shape[0], ) * self._joint_noise_std)
