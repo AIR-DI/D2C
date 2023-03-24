@@ -20,13 +20,35 @@ LAMBDA_MAX = 100
 class H2OAgent(BaseAgent):
     """Implementation of H2O
 
-    :param float policy_noise: the noise used in updating policy network.
     :param int update_actor_freq: the update frequency of actor network.
-    :param float noise_clip: the clipping range used in updating policy network.
-    :param float alpha: the value of alpha, which controls the weight for TD3 learning relative to behavior cloning.
-    :param int N: the number of noise samples to train distance function
-    :param float initial_lambda: the value of initial Lagrangian multiplier
-    :param float lambda_lr: the update step size of Lagrangian multiplier
+    :param int rollout_sim_freq: the rollout frequency of simulation samples.
+    :param int rollout_sim_num: number of simulation samples per rollout.
+    :param bool automatic_entropy_tuning: whether to adopt automatic tuning of entropy coefficient (alpha) in entropy-regularized RL algorithms.
+    :param float log_alpha_init_value: initialization value for log alpha.
+    :param float log_alpha_prime_init_value: initialization value for log alpha prime.
+    :param float target_entropy: target entropy value (from CQL).
+    :param bool backup_entropy: whether to apply entropy backup (from CQL).
+    :param float alpha_multiplier: alpha multiplier (from CQL).
+    :param int sampling_n_next_states: the number of s' resampled from certain s,a pair when performing dynamics gap quantification.
+    :param float s_prime_std_ratio: the multiplier on the standard deviation of s' when performing dynamics gap quantification.
+    :param float noise_std_discriminator: the standard deviation of noise applied on discriminator training.
+    :param bool cql_lagrange: whether to apply alpha prime (from CQL).
+    :param float cql_target_action_gap: lagrange threshold (from CQL).
+    :param float cql_temp: temperature coefficient of regularization term in solving the inner-loop maximization problem.
+    :param int cql_clip_diff_min: min value of value regularizaion term (q_diff).
+    :param int cql_clip_diff_max: max value of value regularizaion term (q_diff).
+    :param float min_q_weight: multiplier on value regularization term (beta).
+    
+    :param bool use_td_target_ratio: whether to use dynamics ratio to fix bellman error.
+    :param bool use_value_regularization: whether to use value regularization.
+    :param bool use_adaptive_weighting: whether to use adaptive weight (omega).
+    :param bool use_variant: whether to use H2O-variant.
+    :param float clip_dynamics_ratio_min: min value of dynamics ratio.
+    :param float clip_dynamics_ratio_max: max value of dynamics ratio.
+    :param float adaptive_weighting_min: min value of adaptive weight (omega).
+    :param float adaptive_weighting_max: max value of adaptive weight (omega).
+    :param float joint_noise_std: the standard deviation of joint noise (to introduce dynamics gap).
+    :param int max_traj_length: the maximum length of sampled trajectories.
 
     .. seealso::
 
@@ -48,11 +70,9 @@ class H2OAgent(BaseAgent):
             sampling_n_next_states: int = 10,
             s_prime_std_ratio: float = 1.0,
             noise_std_discriminator: float = 0.1,
-            cql_importance_sample: bool = True,
             cql_lagrange: bool = False,
             cql_target_action_gap: float = 1.0,
             cql_temp: float = 1.0,
-            cql_max_target_backup: bool = False,
             cql_clip_diff_min: int = -1000,
             cql_clip_diff_max: int = 1000,
             min_q_weight: float = 0.01,
