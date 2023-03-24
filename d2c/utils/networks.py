@@ -346,6 +346,74 @@ class MLP(nn.Module):
         return self._model(inputs)
 
 
+class Classifier(nn.Module):
+    """ based on Multi-layer Perceptron. Discriminator network for H2O.
+
+    :param int input_dim: the dimension of the input.
+    :param int output_dim: the dimension of the output.
+    :param tuple fc_layer_params: the network parameter. For example:
+        ``(300, 300)`` means a 2-layer network with 300 units in each layer.
+    :param device: which device to create this model on. Default to 'cpu'.
+    """
+    def __init__(
+            self,
+            input_dim: int,
+            output_dim: int = 2,
+            fc_layer_params: Sequence[int] = (),
+            device: Union[str, int, torch.device] = 'cpu',
+    ) -> None:
+        super(Classifier, self).__init__()
+        self._device = device
+        self._layers = []
+        hidden_sizes = [input_dim] + list(fc_layer_params)
+        for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):
+            self._layers += miniblock(in_dim, out_dim, None, nn.ReLU)
+        self._layers += miniblock(hidden_sizes[-1], output_dim, None, nn.Tanh)
+        self._model = nn.Sequential(*self._layers)
+
+    def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
+        inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
+        return self._model(inputs) * 2
+
+
+class ConcatClassifier(Classifier):
+    """  Concatenate inputs along dimension and then pass through MLP.
+
+    :param int dim: concatenate inputs in row or column (0 or 1)
+    """
+    def __init__(
+            self, 
+            *args,
+            dim: int = 1, 
+            **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dim = dim
+
+    def forward(self, *inputs: Union[np.ndarray, Tensor]) -> Tensor:
+        flat_inputs = torch.cat(inputs, dim=self.dim)
+        return super().forward(flat_inputs)
+
+
+class Scalar(nn.Module):
+    """ Scalar network
+
+    :param float init_value: initialized value for the scalar
+    """
+    def __init__(
+        self, 
+        init_value: float,
+        device: Union[str, int, torch.device] = 'cpu'
+    ) -> None:
+        super().__init__()
+        self._device = device
+        self.constant = nn.Parameter(
+            torch.tensor(init_value, dtype=torch.float32).to(self._device)
+        )
+
+    def forward(self) -> Tensor:
+        return self.constant
+
+
 class Discriminator(nn.Module):
     """A Discriminator Network(for DMIL).
 

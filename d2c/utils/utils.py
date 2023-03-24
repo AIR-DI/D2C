@@ -1,7 +1,8 @@
 """A collection of some little utils."""
-
 import os
 import random
+import re
+import time
 import numpy as np
 import torch
 from typing import Dict, Generator, List, Callable, Union
@@ -29,6 +30,153 @@ def get_optimizer(name: str) -> Callable:
         return adam_opt_
     else:
         raise ValueError('Unknown optimizer %s.' % name)
+
+
+# generate xml assets path: gym_xml_path
+def generate_xml_path() -> str:
+    import os
+    import gym
+    xml_path = os.path.join(gym.__file__[:-11], 'envs/mujoco/assets')
+
+    assert os.path.exists(xml_path)
+    print("gym_xml_path: ", xml_path)
+
+    return xml_path
+
+
+gym_xml_path = generate_xml_path()
+
+
+# update env xml with different dynamics
+def update_xml(index: str, env_name: str) -> None:
+    xml_name = parse_xml_name(env_name)
+    os.system('cp ./xml_path/{0}/{1} {2}/{1}}'.format(index, xml_name, gym_xml_path))
+
+    time.sleep(0.2)
+
+# translate env name into xml file name
+def parse_xml_name(env_name: str) -> str:
+    if 'walker' in env_name.lower():
+        xml_name = "walker2d.xml"
+    elif 'hopper' in env_name.lower():
+        xml_name = "hopper.xml"
+    elif 'halfcheetah' in env_name.lower():
+        xml_name = "half_cheetah.xml"
+    elif "ant" in env_name.lower():
+        xml_name = "ant.xml"
+    else:
+        raise RuntimeError("No available environment named \'%s\'" % env_name)
+
+    return xml_name
+
+# generate target env
+def update_target_env(env_name: str) -> None:
+    xml_name = parse_xml_name(env_name)
+
+    os.system(
+        'cp xml_path/target_file/{0} {1}/{0}'.format(xml_name, gym_xml_path))
+
+    time.sleep(0.2)
+
+
+# change gravity
+def update_source_env_gravity(variety_degree: float, env_name: str) -> None:
+    old_xml_name = parse_xml_name(env_name)
+    # create new xml 
+    xml_name = "{}_gravityx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
+
+    with open('xml_path/target_file/{}'.format(old_xml_name), "r+") as f:
+
+        new_f = open('xml_path/source_file/{}'.format(xml_name), "w+")
+        for line in f.readlines():
+            if "gravity" in line:
+                pattern = re.compile(r"gravity=\"(.*?)\"")
+                a = pattern.findall(line)
+                gravity_list = a[0].split(" ")
+                new_gravity_list = []
+                for num in gravity_list:
+                    new_gravity_list.append(variety_degree * float(num))
+
+                replace_num = " ".join(str(i) for i in new_gravity_list)
+                replace_num = "gravity=\"" + replace_num + "\""
+                sub_result = re.sub(pattern, str(replace_num), line)
+
+                new_f.write(sub_result)
+            else:
+                new_f.write(line)
+
+        new_f.close()
+
+    # replace the default gym env with newly-revised env
+    os.system(
+        'cp xml_path/source_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
+
+    time.sleep(0.2)
+
+
+# change density
+def update_source_env_density(variety_degree: float, env_name: str) -> None:
+    old_xml_name = parse_xml_name(env_name)
+    # create new xml 
+    xml_name = "{}_densityx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
+
+    with open('xml_path/target_file/{}'.format(old_xml_name), "r+") as f:
+
+        new_f = open('xml_path/source_file/{}'.format(xml_name), "w")
+        for line in f.readlines():
+            if "density" in line:
+                pattern = re.compile(r'(?<=density=")\d+\.?\d*')
+                a = pattern.findall(line)
+                current_num = float(a[0])
+                replace_num = current_num * variety_degree
+                sub_result = re.sub(pattern, str(replace_num), line)
+
+                new_f.write(sub_result)
+            else:
+                new_f.write(line)
+
+        new_f.close()
+
+    # replace the default gym env with newly-revised env
+    os.system(
+        'cp xml_path/source_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
+
+    time.sleep(0.2)
+
+
+# change friction
+def update_source_env_friction(variety_degree: float, env_name: str) -> None:
+    old_xml_name = parse_xml_name(env_name)
+    # create new xml 
+    xml_name = "{}_frictionx{}.xml".format(old_xml_name.split(".")[0], variety_degree)
+
+    with open('xml_path/target_file/{}'.format(old_xml_name), "r+") as f:
+
+        new_f = open('xml_path/source_file/{}'.format(xml_name), "w")
+        for line in f.readlines():
+            if "friction" in line:
+                pattern = re.compile(r"friction=\"(.*?)\"")
+                a = pattern.findall(line)
+                friction_list = a[0].split(" ")
+                new_friction_list = []
+                for num in friction_list:
+                    new_friction_list.append(variety_degree * float(num))
+
+                replace_num = " ".join(str(i) for i in new_friction_list)
+                replace_num = "friction=\"" + replace_num + "\""
+                sub_result = re.sub(pattern, str(replace_num), line)
+
+                new_f.write(sub_result)
+            else:
+                new_f.write(line)
+
+        new_f.close()
+
+    # replace the default gym env with newly-revised env
+    os.system(
+        'cp xml_path/source_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
+
+    time.sleep(0.2)
 
 
 class Flags(object):
@@ -73,4 +221,3 @@ def to_array_as(x, y):
         return torch.as_tensor(x).to(y)
     else:
         return x
-

@@ -56,8 +56,8 @@ class BaseData(ABC):
 class Data(BaseData):
     """Create the replay buffer with batch data that is from the benchmarks or real-world applications dataset.
     
-    It uses different data loaders to get the transitions and adds them into the replay buffer. This class 
-    generates the dataset for the offline RL training.
+    It uses different data loaders to get the transitions and adds them into the replay buffer. This class generates
+    the dataset for the offline RL training.
     
     The main methods that users of this class need to know are:
 
