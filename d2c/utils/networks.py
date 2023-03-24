@@ -301,10 +301,7 @@ class CriticNetwork(nn.Module):
         hidden_sizes = [state_dim + action_dim] + list(fc_layer_params)
         for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):
             self._layers += miniblock(in_dim, out_dim, None, nn.ReLU)
-        last_layer = nn.Linear(hidden_sizes[-1], 1)
-        nn.init.xavier_uniform_(last_layer.weight, gain=1e-2)
-        nn.init.constant_(last_layer.bias, 0.0)
-        self._layers += [last_layer]
+        self._layers += [nn.Linear(hidden_sizes[-1], 1)]
         self._model = nn.Sequential(*self._layers)
 
     def forward(
@@ -348,8 +345,9 @@ class MLP(nn.Module):
         inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
         return self._model(inputs)
 
+
 class Classifier(nn.Module):
-    """ based on Multi-layer Perceptron. Discriminator network for H2O
+    """ based on Multi-layer Perceptron. Discriminator network for H2O.
 
     :param int input_dim: the dimension of the input.
     :param int output_dim: the dimension of the output.
@@ -364,7 +362,7 @@ class Classifier(nn.Module):
             fc_layer_params: Sequence[int] = (),
             device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
-        super(Discriminator, self).__init__()
+        super(Classifier, self).__init__()
         self._device = device
         self._layers = []
         hidden_sizes = [input_dim] + list(fc_layer_params)
@@ -376,7 +374,8 @@ class Classifier(nn.Module):
     def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
         inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
         return self._model(inputs) * 2
-    
+
+
 class ConcatClassifier(Classifier):
     """  Concatenate inputs along dimension and then pass through MLP.
 
@@ -390,9 +389,10 @@ class ConcatClassifier(Classifier):
         super().__init__(*args, **kwargs)
         self.dim = dim
 
-    def forward(self, *inputs: Union[np.ndarray, Tensor], **kwargs) -> Tensor:
+    def forward(self, *inputs: Union[np.ndarray, Tensor]) -> Tensor:
         flat_inputs = torch.cat(inputs, dim=self.dim)
-        return super().forward(flat_inputs, **kwargs)
+        return super().forward(flat_inputs)
+
 
 class Scalar(nn.Module):
     """ Scalar network
@@ -412,6 +412,7 @@ class Scalar(nn.Module):
 
     def forward(self) -> Tensor:
         return self.constant
+
 
 class Discriminator(nn.Module):
     """A Discriminator Network(for DMIL).
