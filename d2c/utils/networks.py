@@ -389,9 +389,9 @@ class ConcatClassifier(Classifier):
         super().__init__(*args, **kwargs)
         self.dim = dim
 
-    def forward(self, *inputs: Union[np.ndarray, Tensor], **kwargs) -> Tensor:
+    def forward(self, *inputs: Union[np.ndarray, Tensor]) -> Tensor:
         flat_inputs = torch.cat(inputs, dim=self.dim)
-        return super().forward(flat_inputs, **kwargs)
+        return super().forward(flat_inputs)
 
 
 class Scalar(nn.Module):

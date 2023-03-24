@@ -7,7 +7,7 @@ example/benchmark/data/d4rl/datasets/
 /example/benchmark/models/*
 __pycache__
 .idea
-/test/utils/temp/*
+.vscode
 /test/utils/temp/*
 /test/data/temp/*
 /test/evaluators/*/temp/*

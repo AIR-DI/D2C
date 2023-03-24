@@ -120,4 +120,8 @@ Develop workflow
 ...................
 When collaborating to develop the algorthm using Git, you may refer to the develop workflow as below:
 
+README complete
+..................
+Finally, please add your new algorithm's name in ``README.md`` under "The supported RL algorithms include:".
+
 .. image:: ../_static/images/develop_workflow.png
