@@ -44,7 +44,6 @@ def main():
     }
     command_args.update({'train.wandb': wandb})
 
-
     config = make_config(command_args)
     real_dataset = Data(config)
     s_norm = dict(zip(['obs_shift', 'obs_scale'], real_dataset.state_shift_scale))

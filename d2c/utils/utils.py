@@ -3,9 +3,6 @@ import os
 import random
 import re
 import time
-from typing import Dict, Generator, List
-
-import gym
 import numpy as np
 import torch
 from typing import Dict, Generator, List, Callable, Union
@@ -33,15 +30,16 @@ def get_optimizer(name: str) -> Callable:
         return adam_opt_
     else:
         raise ValueError('Unknown optimizer %s.' % name)
-    
+
+
 # generate xml assets path: gym_xml_path
-def generate_xml_path():
+def generate_xml_path() -> str:
     import os
     import gym
     xml_path = os.path.join(gym.__file__[:-11], 'envs/mujoco/assets')
 
     assert os.path.exists(xml_path)
-    print("gym_xml_path: ",xml_path)
+    print("gym_xml_path: ", xml_path)
 
     return xml_path
 
@@ -79,6 +77,7 @@ def update_target_env(env_name):
 
     time.sleep(0.2)
 
+
 # change gravity
 def update_source_env_gravity(variety_degree, env_name):
     old_xml_name = parse_xml_name(env_name)
@@ -113,6 +112,7 @@ def update_source_env_gravity(variety_degree, env_name):
 
     time.sleep(0.2)
 
+
 # change density
 def update_source_env_density(variety_degree, env_name):
     old_xml_name = parse_xml_name(env_name)
@@ -141,6 +141,7 @@ def update_source_env_density(variety_degree, env_name):
         'cp xml_path/source_file/{0} {1}/{2}'.format(xml_name, gym_xml_path, old_xml_name))
 
     time.sleep(0.2)
+
 
 # change friction
 def update_source_env_friction(variety_degree, env_name):
@@ -219,4 +220,3 @@ def to_array_as(x, y):
         return torch.as_tensor(x).to(y)
     else:
         return x
-

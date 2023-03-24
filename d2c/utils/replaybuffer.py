@@ -162,22 +162,6 @@ class ReplayBuffer:
         # Update the _ptr and _size.
         self._ptr = indices[-1]
         self._size = min(self._size + batch_size, self._max_size)
-        
-    @property
-    def normalize_states(self, eps=1e-3):
-        # STATE: standard normalization
-        self.state_mean = self._state.mean(0, keepdims=True)
-        self.state_std = self._state.std(0, keepdims=True) + eps
-        if self.scale_state:
-            self.state = (self.state - self.state_mean) / self.state_std
-            self.next_state = (self.next_state - self.state_mean) / self.state_std
-    
-    @property
-    def get_mean_std(self):
-        self.state_mean = self._state.mean(0, keepdims=True)
-        self.state_std = self._state.std(0, keepdims=True)
-        return self.state_mean, self.state_std
-        # return torch.FloatTensor(self.state_mean).to(self._device), torch.FloatTensor(self.state_std).to(self._device)
 
     @property
     def data(self) -> OrderedDict:
