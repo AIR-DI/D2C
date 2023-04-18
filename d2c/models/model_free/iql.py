@@ -7,10 +7,11 @@ import torch
 import copy
 import torch.nn.functional as F
 from torch import nn, Tensor
-from typing import Union, Tuple, Any, Sequence, Dict, Iterator
+from typing import Tuple, Any, Dict
 from d2c.models.base import BaseAgent, BaseAgentModule
 from d2c.utils import networks, utils, policies
-    
+
+
 class IQLAgent(BaseAgent):
     """Implementation of IQL
 
@@ -90,9 +91,8 @@ class IQLAgent(BaseAgent):
         with torch.no_grad():
             # Compute the target Q value
             next_v = self._v_fn(s2)
-            target_q = r + dsc * self._discount * next_v 
-        
-         # Get current Q estimates
+            target_q = r + dsc * self._discount * next_v
+        # Get current Q estimates
         current_q1 = self._q_fns[0](s1, a1)
         current_q2 = self._q_fns[1](s1, a1)
 
@@ -209,6 +209,7 @@ class IQLAgent(BaseAgent):
             device=self._device,
         )
         return modules
+
 
 class AgentModule(BaseAgentModule):
 
