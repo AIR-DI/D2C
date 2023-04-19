@@ -458,3 +458,36 @@ class Discriminator(nn.Module):
         h = torch.cat([state, action, logpi, lossf], dim=-1)
         h = self._model(h)
         return torch.reshape(h, [-1])
+
+
+class ValueNetwork(nn.Module):
+    """Value Network.
+
+    :param Box observation_space: the observation space information. It is an instance
+        of class: ``gym.spaces.Box``.
+    :param tuple fc_layer_params: the network parameter. For example:
+        ``(300, 300)`` means a 2-layer network with 300 units in each layer.
+    :param device: which device to create this model on. Default to 'cpu'.
+    """
+
+    def __init__(
+            self,
+            observation_space: Union[Box, Space],
+            fc_layer_params: Sequence[int] = (),
+            device: Union[str, int, torch.device] = 'cpu',
+    ) -> None:
+        super(ValueNetwork, self).__init__()
+        self._device = device
+        state_dim = observation_space.shape[0]
+        output_dim = 1
+        self._layers = []
+        hidden_sizes = [state_dim] + list(fc_layer_params)
+        for in_dim, out_dim in zip(hidden_sizes[:-1], hidden_sizes[1:]):
+            self._layers += miniblock(in_dim, out_dim, None, nn.ReLU)
+        self._layers += [nn.Linear(hidden_sizes[-1], output_dim)]
+        self._model = nn.Sequential(*self._layers)
+
+    def forward(self, inputs: Union[np.ndarray, Tensor]) -> Tensor:
+        inputs = torch.as_tensor(inputs, device=self._device, dtype=torch.float32)
+        h = self._model(inputs)
+        return torch.reshape(h, [-1])
