@@ -47,7 +47,13 @@
         rollout_size: null,
       }
     },
-
+    iql: {
+      train_schedule: ['agent'],
+      hyper_params: {
+        model_params: {v: [[256, 256],], q: [[256, 256], 2], p: [[256, 256],]},
+        optimizers: {v: ['adam', 3e-4], q: ['adam', 3e-4], p: ['adam', 3e-4]}
+      }
+    },
   },
   env: {
     basic_info: {state_dim: null, state_min: null, state_max: null,

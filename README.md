@@ -9,6 +9,7 @@ The supported RL algorithms include:
 - [Dynamics-Aware Hybrid Offline-and-Online Reinforcement Learning (H2O)](https://arxiv.org/abs/2206.13464.pdf)
 - [Discriminator-Guided Model-Based Offline Imitation Learning (DMIL)](https://arxiv.org/abs/2207.00244)
 - [Behavior Cloning (BC)](http://www.cse.unsw.edu.au/~claude/papers/MI15.pdf)
+- [Offline Reinforcement Learning with Implicit Q-Learning (IQL)](https://arxiv.org/pdf/2110.06169.pdf)
 
 ## Features:
 

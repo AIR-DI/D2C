@@ -8,6 +8,7 @@ from d2c.models.model_free.doge import DOGEAgent
 from d2c.models.model_free.h2o import H2OAgent
 from d2c.models.imitation.dmil import DMILAgent
 from d2c.models.imitation.bc import BCAgent
+from d2c.models.model_free.iql import IQLAgent
 
 
 AGENT_MODULES_DICT = {
@@ -16,6 +17,7 @@ AGENT_MODULES_DICT = {
     'h2o': H2OAgent,
     'dmil': DMILAgent,
     'bc': BCAgent,
+    'iql': IQLAgent,
 }
 
 
@@ -30,11 +32,11 @@ def get_agent(model_name: str) -> Callable[..., BaseAgent]:
         The input name should be in the keys of dict ``AGENT_MODULES_DICT``:
 
         +------------------+------------------------------------------------+
-        |  Imitation       |  'bc', 'dmil'                                        |
+        |  Imitation       |  'bc', 'dmil'                                  |
         +------------------+------------------------------------------------+
         |  Planning        |  'mopp'                                        |
         +------------------+------------------------------------------------+
-        |  Model-free RL   |  'td3_bc', 'doge', 'h2o'                       |
+        |  Model-free RL   |  'td3_bc', 'doge', 'h2o', 'iql'                |
         +------------------+------------------------------------------------+
         |  Model-based RL  |                                                |
         +------------------+------------------------------------------------+
