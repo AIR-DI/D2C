@@ -269,10 +269,10 @@ class ProbDynamicsNetwork(nn.Module):
 class CriticNetwork(nn.Module):
     """Critic Network.
 
-    :param Box observation_space: the observation space information. It is an instance
+    :param gym.spaces.Box or int observation_space: the observation space information. It is an instance
         of class: ``gym.spaces.Box``. `observation_space` can also be an integer which
         represents the dimension of the observation.
-    :param Box action_space: the action space information. It is an instance
+    :param gym.spaces.Box or int action_space: the action space information. It is an instance
         of class: ``gym.spaces.Box``. `action_space` can also be an integer which
         represents the dimension of the action.
     :param tuple fc_layer_params: the network parameter. For example:
@@ -463,8 +463,8 @@ class Discriminator(nn.Module):
 class ValueNetwork(nn.Module):
     """Value Network.
 
-    :param Box observation_space: the observation space information. It is an instance
-        of class: ``gym.spaces.Box``.
+    :param gym.spaces.Box or int observation_space: The observation space information. It is an instance
+        of class: ``gym.spaces.Box``. It can also be an integer which represents the dimension of the observation.
     :param tuple fc_layer_params: the network parameter. For example:
         ``(300, 300)`` means a 2-layer network with 300 units in each layer.
     :param device: which device to create this model on. Default to 'cpu'.
@@ -472,13 +472,16 @@ class ValueNetwork(nn.Module):
 
     def __init__(
             self,
-            observation_space: Union[Box, Space],
+            observation_space: Union[Box, Space, int],
             fc_layer_params: Sequence[int] = (),
             device: Union[str, int, torch.device] = 'cpu',
     ) -> None:
         super(ValueNetwork, self).__init__()
         self._device = device
-        state_dim = observation_space.shape[0]
+        if isinstance(observation_space, int):
+            state_dim = observation_space
+        else:
+            state_dim = observation_space.shape[0]
         output_dim = 1
         self._layers = []
         hidden_sizes = [state_dim] + list(fc_layer_params)
