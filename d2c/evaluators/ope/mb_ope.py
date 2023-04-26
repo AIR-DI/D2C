@@ -14,8 +14,21 @@ from d2c.utils import utils, logger
 
 
 class MBOPE(BaseEval):
-    """
+    """Model-based off-policy evaluation.
+    Using the trained dynamics model to evaluate the policy through predicting the cumulative reward.
 
+    :param BaseAgent agent: The agent with the trained policy.
+    :param ReplayBuffer data: The dataset of the batch data.
+    :param LeaEnv env: The env object that contains the trained dynamics.
+    :param str save_dir: The directory for saving the evaluating results.
+    :param float discount: The discount coefficient for computing the cumulative reward.
+    :param int episode_steps: The number of steps for dynamics rollout.
+    :param int eval_size: The batch size of the evaluating data.
+    :param Optional[str] wandb_project: The wandb project name.
+    :param Optional[str] wandb_name: The name of the wandb logger object.
+    :param Optional[str] wandb_mode: The mode of the wandb logger. Default to be 'online'.
+    :param int start: The start point of the evaluating data.
+    :param int steps: The evaluating data size.
     """
 
     TYPE: ClassVar[str] = 'mb_ope'
