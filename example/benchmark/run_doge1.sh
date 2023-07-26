@@ -8,14 +8,14 @@ ALPHA_LIST1='hopper_medium-v2 hopper_medium_replay-v2 hopper_random-v2 halfcheet
 # shellcheck disable=SC1061
 # shellcheck disable=SC1073
 #for STD in 0.2 0.3; do
-for ENV_U in 'Hopper' 'Walker2d'; do
+for ENV_U in 'HalfCheetah'; do
 ENV=$ENV_U'-v2'
 #for DATA_TYPE in 'medium-v2' 'medium_replay-v2' 'medium_expert-v2' 'random-v2'; do
 #for DATA_TYPE in 'medium-v2' 'medium_replay-v2'; do
 DATA=${ENV_U,,}'_'$DATA_TYPE
 DIR='data/d4rl/mujoco/'
 DATA1=$DIR${ENV_U,,}'_medium_expert-v2'
-RATIO1=0.1
+for RATIO1 in 0.03 0.01; do
 DATA2=$DIR${ENV_U,,}'_random-v2'
 RATIO2=1
 # shellcheck disable=SC2199
@@ -36,10 +36,10 @@ else
   train_d_steps=100000
 fi
 
-for SEED in 30 40; do
+for SEED in 20; do
 GPU_DEVICE=0
 CUDA_VISIBLE_DEVICES=$GPU_DEVICE python demo_data_mix.py \
-  --train.agent_ckpt_name='221109-data_mix/me0.1_r1' \
+  --train.agent_ckpt_name='221110-data_mix/me'$RATIO1'_r'$RATIO2 \
   --model.model_name='doge' \
   --model.doge.hyper_params.alpha=$alpha \
   --model.doge.hyper_params.initial_lambda=$initial_lambda\
@@ -55,12 +55,13 @@ CUDA_VISIBLE_DEVICES=$GPU_DEVICE python demo_data_mix.py \
   --train.seed=$SEED \
   --train.wandb.entity='d2c' \
   --train.wandb.project='data_mix' \
-  --train.wandb.name='doge-'$ENV_U'-me0.1_r1-seed'$SEED \
+  --train.wandb.name='doge-'$ENV_U'-me'$RATIO1'_r'$RATIO2 \
   --data1=$DATA1 \
   --ratio1=$RATIO1 \
   --data2=$DATA2 \
   --ratio2=$RATIO2 &
 sleep 2
 
+done
 done
 done
