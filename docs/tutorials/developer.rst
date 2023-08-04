@@ -8,11 +8,11 @@ The working directory of the RL algorthm module is ``d2c/models``. There are sev
 
 .. figure:: ../_static/images/algorithms.png
 
-Know the :class:`~d2c.models.base.BaseAgent`
+Know the :class:`~d2c.models.BaseAgent`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The system provides the algorithm base class to abstract some essential methods in the algorithm developing, including:
 
-- :meth:`~d2c.models.base.BaseAgent.__init__`: there are some essential parameters of the RL algorithms, like ``batch_size``, ``discount``... The detail information of the parameters can be found in doc string of the base class :class:`~d2c.models.base.BaseAgent`. Besides the parameters configuration, It calls two methods to build the networks and some other elements of the algorithm:
+- :meth:`~d2c.models.BaseAgent.__init__`: there are some essential parameters of the RL algorithms, like ``batch_size``, ``discount``... The detail information of the parameters can be found in doc string of the base class :class:`~d2c.models.BaseAgent`. Besides the parameters configuration, It calls two methods to build the networks and some other elements of the algorithm:
 
   - :meth:`_get_modules`: please see below for details.
 
@@ -26,7 +26,7 @@ The system provides the algorithm base class to abstract some essential methods 
 
 - :meth:`_build_fns`: it first uses the class :class:`~d2c.models.base.BaseAgentModule` to build all the network models of the RL algorithm.
 
-  - :class:`~d2c.models.base.BaseAgentModule`: it is a base class in the module `d2c.models.base`. In your algorithm module, you should inherit it to build the class ``AgentModule`` of your algorithm. Its initialization parameter ``modules`` is come from the result of the above method :meth:`~d2c.models.base.BaseAgent._get_modules`. Its method :meth:`~d2s.models.base.BaseAgentModule._build_modules` builds the models of the algorithm according to the input network factories. You should implement this method in your ``AgentModule`` class.
+  - :class:`~d2c.models.base.BaseAgentModule`: it is a base class in the module :ref:`d2c.models.base <model-base-label>`. In your algorithm module, you should inherit it to build the class ``AgentModule`` of your algorithm. Its initialization parameter ``modules`` is come from the result of the above method :meth:`~d2c.models.base.BaseAgent._get_modules`. Its method :meth:`~d2s.models.base.BaseAgentModule._build_modules` builds the models of the algorithm according to the input network factories. You should implement this method in your ``AgentModule`` class.
 
   - We get the attribute ``_agent_module`` by instantiating the class ``AgentModule``. Then you can build some attributes as the reference of the network models in ``_agent_module`` for convenience.
 
@@ -40,23 +40,23 @@ The system provides the algorithm base class to abstract some essential methods 
 
 - :meth:`_optimize_step`: it builds the optimizing schedule for the algorithm. Before implement this method, you should add the methods to optimize the network models in the algorithm, like :meth:`_optimize_q` and :meth:`_optimize_p` to build loss and optimize the Q net and policy net for one step respectively. In method  :meth:`_optimize_step`, you can use the defined optimize functions above to implement the algorithm. You can also update the target network here and collect the returned training information of each optimizing function.
 
-- :meth:`~d2c.models.base.BaseAgent.train_step`: this is the main API of the algorithm class. It has been defined in advance. Calling it to implement one step training of the algorithm.
+- :meth:`~d2c.models.BaseAgent.train_step`: this is the main API of the algorithm class. It has been defined in advance. Calling it to implement one step training of the algorithm.
 
 - :meth:`_update_target_fns`: it updates the parameters of the target network. The inputs are the pair of the source network(``torch.nn.Module``) and the target network(``torch.nn.Module``).
 
-- :meth:`~d2c.models.base.BaseAgent.print_train_info`: it is an API for calling to print the training information in training process.
+- :meth:`~d2c.models.BaseAgent.print_train_info`: it is an API for calling to print the training information in training process.
 
-- :meth:`~d2c.models.base.BaseAgent.write_train_summary`: it is an API for calling to log the training information using Tensorboard or Wandb.
+- :meth:`~d2c.models.BaseAgent.write_train_summary`: it is an API for calling to log the training information using Tensorboard or Wandb.
 
 - :meth:`_build_test_policies`: it builds the policy for testing using the class in module :ref:`d2c.utils.policies <policies-label>`. You can add new class in :ref:`d2c.utils.policies <policies-label>` as needed.
 
-- :meth:`~d2c.models.base.BaseAgent.save`: Call this API to save the trained models. You can save all the models of the algorithm as an entirety by saving the attribute ``_agent_module``. You can also respectively save the every model of the algorithm.
+- :meth:`~d2c.models.BaseAgent.save`: Call this API to save the trained models. You can save all the models of the algorithm as an entirety by saving the attribute ``_agent_module``. You can also respectively save the every model of the algorithm.
 
-- :meth:`~d2c.models.base.BaseAgent.restore`: Call this API to restore the trained models of the algorithm.
+- :meth:`~d2c.models.BaseAgent.restore`: Call this API to restore the trained models of the algorithm.
 
 Implement ``YOUR_ALGORITHM.py``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Inherit the base class :class:`~d2c.models.base.BaseAgent` and follow the following steps to add a new algorithm. **You can take the module :ref:`td3_bc <td3bc-label>` in d2c/models/model_free as reference.**
+Inherit the base class :class:`~d2c.models.BaseAgent` and follow the following steps to add a new algorithm. **You can take the module** :ref:`td3_bc <td3bc-label>` **in d2c/models/model_free as reference.**
 
 1. Determine the type of the algorithm and choose a folder in ``d2c/models`` to place the algorithm module file. The file should be named after the name of the algorithm, like ``td3_bc.py``.
 
@@ -76,7 +76,7 @@ Inherit the base class :class:`~d2c.models.base.BaseAgent` and follow the follow
 
 Configurate your algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-1. Complete module `d2c.models.__init__`. Import the new algorithm module here and update the dict ``AGENT_MODULES_DICT`` to add the new module. The key of the dict is the name of the algorthm.
+1. Complete module ``d2c.models.__init__``. Import the new algorithm module here and update the dict ``AGENT_MODULES_DICT`` to add the new module. The key of the dict is the name of the algorthm.
 
 2. Complete the configuration file ``example/benchmark/config/model_config.json5``. Add the model parameters dict in ``model``. Refer to ``model.td3_bc``.
 

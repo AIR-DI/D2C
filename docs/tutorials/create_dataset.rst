@@ -42,4 +42,4 @@ By inheriting from :class:`~d2c.utils.dataloader.BaseDataLoader`, different type
 
 When customizing the Dataloader for benchmark datasets, you can inherit from the base class :class:`~d2c.utils.dataloader.BaseBMLoader` and implement :meth:`~d2c.utils.dataloader.BaseBMLoader._load_data` to construct Dataloaders for different benchmark datasets. :class:`~d2c.utils.dataloader.D4rlDataLoader` is a Dataloader constructed for the D4RL dataset, which can be used as a reference.
 
-For offline data from real-world scenarios, they are usually saved as `.csv` files. `AppDataLoader` is specially designed to load offline datasets from real-world scenarios.
+For offline data from real-world scenarios, they are usually saved as ``.csv`` files. ``AppDataLoader`` is specially designed to load offline datasets from real-world scenarios.

@@ -27,6 +27,7 @@ class DOGEAgent(BaseAgent):
     :param float initial_lambda: the vale of initial Lagrangian multiplier
     :param float lambda_lr: the update step size of Lagrangian multiplier
     :param float train_d_steps: the total training steps to train distance function
+
     .. seealso::
 
         Please refer to :class:`~d2c.models.base.BaseAgent` for more detailed

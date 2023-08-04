@@ -1,23 +1,20 @@
 d2c.trainers
 ====================
 
-.. automodule:: d2c.trainers
+
+BaseTrainer
+------------------
+
+.. autoclass:: d2c.trainers.BaseTrainer
    :members:
    :undoc-members:
    :show-inheritance:
 
-base
-~~~~~~~~~~
 
-.. automodule:: d2c.trainers.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Trainer
+------------------
 
-trainer
-~~~~~~~~~~~
-
-.. automodule:: d2c.trainers.trainer
+.. autoclass:: d2c.trainers.Trainer
    :members:
    :undoc-members:
    :show-inheritance:

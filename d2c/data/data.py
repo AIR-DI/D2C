@@ -1,8 +1,6 @@
 """Loading data and constructing the buffer."""
 
 import os
-# import sys
-# sys.path.append('../../')
 import logging
 import numpy as np
 from abc import ABC, abstractmethod

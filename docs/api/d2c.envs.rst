@@ -1,24 +1,79 @@
 d2c.envs
 ================
 
-.. automodule:: d2c.envs
+
+BaseEnv
+-------------
+
+.. autoclass:: d2c.envs.BaseEnv
    :members:
    :undoc-members:
    :show-inheritance:
 
-Subpackages
-~~~~~~~~~~~~~~~
 
-.. toctree::
-   :maxdepth: 5
+.. _external-env-label:
 
-   d2c.envs.external
-   d2c.envs.learned
+External Env
+---------------
 
-base
+D4rlEnv
 ~~~~~~~~~~~~~~
 
-.. automodule:: d2c.envs.base
+.. autoclass:: d2c.envs.external.D4rlEnv
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. _benchmark-env-label:
+
+benchmark_env
+~~~~~~~~~~~~~~
+
+.. autofunction:: d2c.envs.benchmark_env
+
+
+.. _learned-env-label:
+
+Learned Env
+---------------
+
+LeaEnv
+~~~~~~~~~~~~~~
+
+.. autoclass:: d2c.envs.LeaEnv
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Dynamics
+~~~~~~~~~~~~~~
+
+BaseDyna
+^^^^^^^^^^^^^^^
+
+.. autoclass:: d2c.envs.learned.dynamics.BaseDyna
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ProbDyna
+^^^^^^^^^^^^^^^
+
+.. autoclass:: d2c.envs.learned.dynamics.ProbDyna
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. _register-dyna-label:
+
+register_dyna
+^^^^^^^^^^^^^^^
+
+.. autofunction:: d2c.envs.learned.dynamics.register_dyna
+
+.. _make-dynamics-label:
+
+make_dynamics
+^^^^^^^^^^^^^^^
+
+.. autofunction:: d2c.envs.learned.dynamics.make_dynamics

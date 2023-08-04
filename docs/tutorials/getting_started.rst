@@ -12,7 +12,7 @@ You can install ``D2C`` via GitHub repository::
 
 .. note::
 
-  ``d3rlpy`` supports Python 3.7+. Make sure which version you use.
+  ``D2C`` supports Python 3.7+. Make sure which version you use.
 
 .. note::
 
@@ -53,7 +53,7 @@ Configuration
 
 There are two configuration files in ``benchmark/config``:
 
-- ``app_config.py``: The configuration for customize application(like the real-world application). See more documents at :doc:`./configuration_for_real_application`.
+- ``app_config.py``: The configuration for customize application(like the real-world application). See more documents at :doc:`./configuration`.
 
 - ``model_config.json5``: The summary configuration for the RL algorithms, environment, trainer and other modules.
 
@@ -122,7 +122,7 @@ Setup the agent and the evaluator:
 Start Training
 ---------------
 
-Now, you can setup the ``Trainer`` and start data-driven training.
+Now, you can setup the :class:`~d2c.trainers.Trainer` and start data-driven training.
 
 .. code-block:: python
 

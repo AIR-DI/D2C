@@ -1,15 +1,35 @@
 d2c.data
 ================
 
-.. automodule:: d2c.data
+
+BaseData
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: d2c.data.BaseData
    :members:
    :undoc-members:
    :show-inheritance:
 
-data
+Data
 ~~~~~~~~~~~~~~~~~~
 
-.. automodule:: d2c.data.data
+.. autoclass:: d2c.data.Data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+DataNoise
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: d2c.data.DataNoise
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+DataMix
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: d2c.data.DataMix
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,74 +1,76 @@
 d2c.utils
 =================
 
-.. automodule:: d2c.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-
-config
-~~~~~~~~~~~
+Config
+-----------------
 
 .. automodule:: d2c.utils.config
    :members:
    :undoc-members:
    :show-inheritance:
 
-dataloader
-~~~~~~~~~~~~
+
+Dataloader
+-----------------
 
 .. automodule:: d2c.utils.dataloader
    :members:
    :undoc-members:
    :show-inheritance:
 
-logger
-~~~~~~~~~~~~
+
+Logger
+-----------------
 
 .. automodule:: d2c.utils.logger
    :members:
    :undoc-members:
    :show-inheritance:
 
+
 .. _networks-label:
 
-networks
-~~~~~~~~~~~~~
+Networks
+-----------------
 
 .. automodule:: d2c.utils.networks
    :members:
    :undoc-members:
    :show-inheritance:
 
+
 .. _policies-label:
 
-policies
-~~~~~~~~~~~~~~
+Policies
+-----------------
 
 .. automodule:: d2c.utils.policies
    :members:
    :undoc-members:
    :show-inheritance:
 
-replaybuffer
-~~~~~~~~~~~~~~~
+
+Replaybuffer
+-----------------
 
 .. automodule:: d2c.utils.replaybuffer
    :members:
    :undoc-members:
    :show-inheritance:
 
-utils
-~~~~~~~~~~~~~~~~
+
+Utils
+-----------------
 
 .. automodule:: d2c.utils.utils
    :members:
    :undoc-members:
    :show-inheritance:
 
-wrappers
-~~~~~~~~~~~~~~~~~~~~
+
+Wrappers
+-----------------
 
 .. automodule:: d2c.utils.wrappers
    :members:
