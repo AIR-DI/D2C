@@ -6,7 +6,7 @@ Install
 
 You can install ``D2C`` via GitHub repository::
 
-  $ git clone https://github.com/air_di/d2c.git
+  $ git clone https://github.com/AIR-DI/D2C.git
   $ cd d2c
   $ pip install -e .
 

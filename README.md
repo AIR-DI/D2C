@@ -31,7 +31,7 @@ The example scripts are under [example/](./example/benchmark) folder and [test/]
 ## Installation
 D2C interface can be installed as follows:
 ```commandline
-git clone https://gitlab.com/air_rl/algorithms-library/d2c.git
+git clone https://github.com/AIR-DI/D2C.git
 cd d2c
 pip install -e .
 ```
