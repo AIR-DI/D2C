@@ -7,9 +7,9 @@ from setuptools import find_packages
 setup(
     name='d2c',
     description="D2C is a Data-driven Control Library based on reinforcement learning.",
-    url='https://gitlab.com/air_rl/algorithms-library/d2c.git',
+    url='https://github.com/AIR-DI/D2C.git',
     python_requires=">=3.7",
-    version='0.0.1',
+    version='0.1.0',
     packages=find_packages(),
     install_requires=[
         'gym==0.23.1',
