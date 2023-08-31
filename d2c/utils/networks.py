@@ -377,15 +377,16 @@ class Classifier(nn.Module):
 
 
 class ConcatClassifier(Classifier):
-    """  Concatenate inputs along dimension and then pass through MLP.
+    """Concatenate inputs along dimension and then pass through MLP.
 
-    :param int dim: concatenate inputs in row or column (0 or 1)
+    :param int dim: concatenate inputs in row or column (0 or 1).
     """
     def __init__(
-            self, 
+            self,
+            dim: int = 1,
             *args,
-            dim: int = 1, 
-            **kwargs):
+            **kwargs,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.dim = dim
 

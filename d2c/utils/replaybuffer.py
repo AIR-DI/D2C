@@ -9,8 +9,6 @@ from typing import Union, Optional
 class ReplayBuffer:
     """The base replay buffer.
 
-    The main methods:
-
     :param int state_dim: the dimension of the state.
     :param int action_dim: the dimension of the action.
     :param int max_size: the maximum size of the buffer.

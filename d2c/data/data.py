@@ -9,7 +9,7 @@ from typing import Dict, Callable, Tuple, Union, List
 from d2c.envs import BaseEnv, LeaEnv
 from d2c.utils.utils import add_gaussian_noise
 from d2c.utils.replaybuffer import ReplayBuffer
-from d2c.utils.dataloader import AppDataLoader, D4rlDataLoader, BaseDataLoader, BaseBMLoader
+from d2c.utils.dataloader import D4rlDataLoader, BaseDataLoader, BaseBMLoader
 
 
 class BaseData(ABC):
@@ -126,20 +126,7 @@ class Data(BaseData):
         self._data_loader = self._data_loader_list[self._data_loader_name]()
 
     def _app_data_loader(self):
-        return AppDataLoader(
-            self._data_path,
-            state_indices=self._app_cfg.state_indices,
-            action_indices=self._app_cfg.action_indices,
-            state_scaler=self._app_cfg.state_scaler,
-            state_scaler_params=self._app_cfg.state_scaler_params,
-            action_scaler=self._app_cfg.action_scaler,
-            action_scaler_params=self._app_cfg.action_scaler_params,
-            reward_scaler=self._app_cfg.reward_scaler,
-            reward_scaler_params=self._app_cfg.reward_scaler_params,
-            reward_fn=self._app_cfg.reward_fn,
-            cost_fn=self._app_cfg.cost_fn,
-            done_fn=self._app_cfg.done_fn,
-        )
+        raise NotImplementedError
 
     def _d4rl_data_loader(self) -> D4rlDataLoader:
         state_normalize = self._env_cfg.state_normalize

@@ -21,9 +21,6 @@ The supported RL algorithms include:
 
 - It automates the policy training process in real-world scenario applications. It simplifies the steps of problem definition, model training, policy evaluation and model deployment.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
 ## Documentation
 
 The tutorials and API documentation are hosted on [d2c.readthedocs.io](https://readthedocs.com).
@@ -101,13 +98,11 @@ trainer.train()
 You can also run it in command line. Please refer to the file [example/benchmark/run.sh](./example/benchmark/run.sh) for details.
 
 ## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
 ## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
 
 ## Contributing
 D2C is under development.
 
 ## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+
