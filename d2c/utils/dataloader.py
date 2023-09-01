@@ -66,7 +66,7 @@ class BaseDataLoader(ABC):
 
 class AppDataLoader(BaseDataLoader):
     """The data loader for the real-world applications dataset."""
-    raise NotImplementedError
+    pass
 
 
 class BaseBMLoader(BaseDataLoader):
