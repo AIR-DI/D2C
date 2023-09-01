@@ -64,9 +64,9 @@ class BaseDataLoader(ABC):
         return dataset
 
 
-class AppDataLoader(BaseDataLoader):
-    """The data loader for the real-world applications dataset."""
-    pass
+# class AppDataLoader(BaseDataLoader):
+#     """The data loader for the real-world applications dataset."""
+#     pass
 
 
 class BaseBMLoader(BaseDataLoader):
