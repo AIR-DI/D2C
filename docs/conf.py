@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.abspath('../'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'D2C'
-copyright = '2022, AIR-RL'
-author = 'AIR-RL'
+copyright = '2023, AIR-DREAM'
+author = 'AIR-DREAM'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

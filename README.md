@@ -1,5 +1,8 @@
 # D2C
 
+[![Documentation Status](https://readthedocs.org/projects/air-d2c/badge/?version=latest)](https://air-d2c.readthedocs.io/en/latest/)
+![MIT](https://img.shields.io/badge/license-MIT-blue)
+
 D2C(**D**ata-**d**riven **C**ontrol Library) is a library for data-driven control based on reinforcement learning. It is a platform for conducting reinforcement learning experiments and solving various control problems in real-world scenarios. It has two main advantages: first, it makes the RL experiments fast and convenient; second, it enables the application of offline reinforcement learning technology in real-world settings more easily and simply.
 
 The supported RL algorithms include:
@@ -23,7 +26,7 @@ The supported RL algorithms include:
 
 ## Documentation
 
-The tutorials and API documentation are hosted on [d2c.readthedocs.io](https://readthedocs.com).
+The tutorials and API documentation are hosted on [air-d2c.readthedocs.io](https://air-d2c.readthedocs.io/).
 
 The example scripts are under [example/](./example/benchmark) folder and [test/](./test) folder.
 
