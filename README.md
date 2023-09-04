@@ -110,7 +110,7 @@ Tell people where they can go to for help. It can be any combination of an issue
 If you have ideas for releases in the future, it is a good idea to list them in the README.
 
 ## Contributing
-D2C is under development.
+D2C is under development. More new RL algorithms are going to be added and we will keep improving D2C. We always welcome contributions to help make D2C better with us together.
 
-## Authors and acknowledgment
+## Acknowledgment
 Show your appreciation to those who have contributed to the project.
