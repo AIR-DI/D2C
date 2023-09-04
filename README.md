@@ -105,7 +105,7 @@ You can also run it in command line. Please refer to the file [example/benchmark
 ## Roadmap
 
 ## Contributing
-D2C is under development.
+D2C is under development. More new RL algorithms are going to be added and we will keep improving D2C. We always welcome contributions to help make D2C better with us together.
 
-## Authors and acknowledgment
-
+## Acknowledgment
+Show your appreciation to those who have contributed to the project.
