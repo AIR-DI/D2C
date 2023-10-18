@@ -1,0 +1,4 @@
+/* 修改左上角背景颜色为白色 */
+.rst-header .rst-header-logo {
+    background-color: #fff;
+}
