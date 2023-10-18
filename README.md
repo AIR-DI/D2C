@@ -110,7 +110,7 @@ You can also run it in command line. Please refer to the file [example/benchmark
 | Issues | [GitHub Issues](https://github.com/AIR-DI/D2C/issues) |
 |E-mail | zhuxiangyu@air.tsinghua.edu.cn |
 
-## Roadmap
+[//]: # (## Roadmap)
 
 ## Contributing
 D2C is under development. More new RL algorithms are going to be added and we will keep improving D2C. We always welcome contributions to help make D2C better with us together.
