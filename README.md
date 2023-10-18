@@ -104,7 +104,6 @@ You can also run it in command line. Please refer to the file [example/benchmark
 
 ## Support
 
-[//]: # (Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.)
 | Channel | Link                                                 |
 |:-|:-----------------------------------------------------|
 | Issues | [GitHub Issues](https://github.com/AIR-DI/D2C/issues) |
