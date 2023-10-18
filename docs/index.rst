@@ -6,13 +6,13 @@
 Welcome to D2C's documentation!
 ===============================
 
-D2C(**D**\ ata-\ **d**\ riven **C**\ ontrol Library) is a library for data-driven control based on reinforcement learning. It is a platform for conducting reinforcement learning experiments and solving various control problems in real-world scenarios. It has two main advantages: first, it makes the RL experiments fast and convenient; second, it enables the application of offline reinforcement learning technology in real-world settings more easily and simply.
+D2C(**D**\ ata-\ **d**\ riven **C**\ ontrol Library) is a library for data-driven decision-making & control based on state-of-the-art offline reinforcement learning (RL), offline imitation learning (IL), and offline planning algorithms. It is a platform for solving various decision-making & control problems in real-world scenarios. D2C is designed to offer fast and convenient algorithm performance development and testing, as well as providing easy-to-use toolchains to accelerate the real-world deployment of SOTA data-driven decision-making methods.
 
 The overall framework of D2C is as below:
 
 .. figure:: ./_static/images/overall_framework.png
 
-The supported RL algorithms include:
+The current supported offline RL/IL algorithms include (**more to come**):
 
 * :class:`~d2c.models.TD3BCAgent` `TD3+BC <https://arxiv.org/pdf/2106.06860.pdf>`_
 
@@ -28,11 +28,11 @@ The supported RL algorithms include:
 
 Here are other features of D2C:
 
-* It includes a large collection of offline reinforcement learning algorithms: model-free offline RL, model-based offline RL, planning methods and imitation learning. In each category, there are our self-developed algorithms and other advanced algorithms.
+* D2C includes a large collection of offline RL and IL algorithms: model-free and model-based offline RL/IL algorithms, as well as planning methods.
 
-* It is highly modular and extensible. You can easily build custom algorithms and conduct experiments with it.
+* D2C is highly modular and extensible. You can easily build custom algorithms and conduct experiments with it.
 
-* It automates the policy training process in real-world scenario applications. It simplifies the steps of problem definition, model training, policy evaluation and model deployment.
+* D2C automates the development process in real-world control applications. It simplifies the steps of problem definition/mathematical formulation, policy training, policy evaluation and model deployment.
 
 
 Installation

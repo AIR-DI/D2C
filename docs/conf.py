@@ -48,6 +48,8 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 html_last_updated_fmt = '%b %d, %Y'
 html_domain_indices = True
+html_logo = '_static/images/d2c-logo.png'  # 指定logo图片的路径
+html_theme_options = {'logo_only': False}  # 设置只显示logo而不显示项目名称
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).

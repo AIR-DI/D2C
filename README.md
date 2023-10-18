@@ -1,11 +1,13 @@
-# D2C
+<p align="center"><img align="center" width="300px" src="docs/_static/images/d2c-logo.png"></p>
+
+# D2C: Data-Driven Control Library
 
 [![Documentation Status](https://readthedocs.org/projects/air-d2c/badge/?version=latest)](https://air-d2c.readthedocs.io/en/latest/)
 ![MIT](https://img.shields.io/badge/license-MIT-blue)
 
-D2C(**D**ata-**d**riven **C**ontrol Library) is a library for data-driven control based on reinforcement learning. It is a platform for conducting reinforcement learning experiments and solving various control problems in real-world scenarios. It has two main advantages: first, it makes the RL experiments fast and convenient; second, it enables the application of offline reinforcement learning technology in real-world settings more easily and simply.
+D2C(**D**ata-**d**riven **C**ontrol Library) is a library for data-driven decision-making & control based on state-of-the-art offline reinforcement learning (RL), offline imitation learning (IL), and offline planning algorithms. It is a platform for solving various decision-making & control problems in real-world scenarios. D2C is designed to offer fast and convenient algorithm performance development and testing, as well as providing easy-to-use toolchains to accelerate the real-world deployment of SOTA data-driven decision-making methods.
 
-The supported RL algorithms include:
+The current supported offline RL/IL algorithms include (**more to come**):
 
 - [Twin Delayed DDPG with Behavior Cloning (TD3+BC)](https://arxiv.org/pdf/2106.06860.pdf)
 - [Distance-Sensitive Offline Reinforcement Learning (DOGE)](https://arxiv.org/abs/2205.11027.pdf)
@@ -18,11 +20,11 @@ The supported RL algorithms include:
 
 ## Features:
 
-- It includes a large collection of offline reinforcement learning algorithms: model-free offline RL, model-based offline RL, planning methods and imitation learning. In each category, there are our self-developed algorithms and other advanced algorithms.
+- D2C includes a large collection of offline RL and IL algorithms: model-free and model-based offline RL/IL algorithms, as well as planning methods. 
 
-- It is highly modular and extensible. You can easily build custom algorithms and conduct experiments with it.
+- D2C is highly modular and extensible. You can easily build custom algorithms and conduct experiments with it.
 
-- It automates the policy training process in real-world scenario applications. It simplifies the steps of problem definition, model training, policy evaluation and model deployment.
+- D2C automates the development process in real-world control applications. It simplifies the steps of problem definition/mathematical formulation, policy training, policy evaluation and model deployment.
 
 ## Badges
 On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
@@ -104,7 +106,12 @@ trainer.train()
 You can also run it in command line. Please refer to the file [example/benchmark/run.sh](./example/benchmark/run.sh) for details.
 
 ## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+
+[//]: # (Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.)
+| Channel | Link                                                 |
+|:-|:-----------------------------------------------------|
+| Issues | [GitHub Issues](https://github.com/AIR-DI/D2C/issues) |
+|E-mail | zhuxiangyu@air.tsinghua.edu.cn |
 
 ## Roadmap
 If you have ideas for releases in the future, it is a good idea to list them in the README.
@@ -112,5 +119,20 @@ If you have ideas for releases in the future, it is a good idea to list them in 
 ## Contributing
 D2C is under development. More new RL algorithms are going to be added and we will keep improving D2C. We always welcome contributions to help make D2C better with us together.
 
+## Citation:
+
+To cite this repository:
+
+```
+@misc{d2c,
+  author = {Xiangyu Zhu and Jianxiong Li and Wenjia Zhang and Haoyi Niu and Yinan Zheng and Haoran Xu and Xianyuan Zhan},
+  title = {{D2C}: Data-driven Control Library},
+  year = {2023},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/AIR-DI/D2C}},
+}
+```
+
 ## Acknowledgment
-Show your appreciation to those who have contributed to the project.
+D2C is supported by [AIR-DREAM Lab](https://air-dream.netlify.app/), which is a research group at [Institute for AI Industry Research (AIR), Tsinghua University](https://air.tsinghua.edu.cn/en/).
